@@ -23,6 +23,7 @@ from .leaderboards import (
     player_timelines,
     recent_first_places,
     recent_high_pp,
+    recent_scores,
     trending_beatmaps,
 )
 from .models import Beatmap, Score, User
@@ -102,6 +103,7 @@ def index():
         stats=stats,
         first_places=recent_first_places(),
         high_pp=recent_high_pp(),
+        recent=recent_scores(),
         trending=trending_beatmaps(),
     )
 

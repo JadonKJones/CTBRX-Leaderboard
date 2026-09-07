@@ -119,3 +119,12 @@ class Meta(db.Model):
             row = Meta(key=key)
             db.session.add(row)
         row.value = None if value is None else str(value)
+
+
+class DiscordLink(db.Model):
+    __tablename__ = "discord_links"
+
+    discord_id = db.Column(db.String(64), primary_key=True)
+    osu_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+
+    user = db.relationship("User", backref=db.backref("discord_link", uselist=False))

@@ -19,10 +19,15 @@
   <div class="home-cols">
     <div class="home-main">
       <div class="toolbar" id="feedtabs">
-        <button class="btn active" data-feed="fp">First Places</button>
+        <button class="btn active" data-feed="recent">Recent</button>
+        <button class="btn" data-feed="fp">First Places</button>
         <button class="btn" data-feed="hp">High PP</button>
       </div>
-      <div id="feed-fp">
+      <div id="feed-recent">
+        {% for s in recent %}{{ m.score_card(s) }}
+        {% else %}<p class="muted">No scores yet.</p>{% endfor %}
+      </div>
+      <div id="feed-fp" hidden>
         {% for s in first_places %}{{ m.score_card(s) }}
         {% else %}<p class="muted">No #1 scores yet.</p>{% endfor %}
       </div>
@@ -52,11 +57,10 @@
   </div>
 
 <script>
-document.querySelectorAll('#feedtabs button').forEach(b => b.onclick = () => {
-  document.querySelectorAll('#feedtabs button').forEach(x => x.classList.remove('active'));
-  b.classList.add('active');
-  document.getElementById('feed-fp').hidden = b.dataset.feed !== 'fp';
-  document.getElementById('feed-hp').hidden = b.dataset.feed !== 'hp';
+const tabs = document.querySelectorAll('#feedtabs button');
+tabs.forEach(b => b.onclick = () => {
+  tabs.forEach(x => x.classList.toggle('active', x === b));
+  tabs.forEach(x => { document.getElementById('feed-' + x.dataset.feed).hidden = x !== b; });
 });
 </script>
 {% endblock %}

@@ -139,6 +139,7 @@ def _ensure_user(api, user_id: int, embedded: dict | None = None) -> User | None
 def process_scores(api, scores: list[dict], cache_path: str) -> list[int]:
     """Store relevant passed catch-RX scores. Returns affected user ids."""
     affected: list[int] = []
+    new_score_ids: list[int] = []
 
     for score in scores:
         if not is_catch(score):
@@ -161,21 +162,21 @@ def process_scores(api, scores: list[dict], cache_path: str) -> list[int]:
             if _ensure_user(api, user_id, score.get("user")) is None:
                 continue
 
-            db.session.add(
-                Score(
-                    id=score_id,
-                    user_id=user_id,
-                    beatmap_id=beatmap_id,
-                    grade=(score.get("rank") or "D"),
-                    accuracy=float(score.get("accuracy", 0) or 0),
-                    combo=int(score.get("max_combo", 0) or 0),
-                    mods=mods_to_strings(api_mods),
-                    date=_parse_date(score.get("ended_at") or score.get("created_at")),
-                    total_score=int(score.get("total_score", 0) or 0),
-                    is_best=False,
-                    **_catch_statistics(score.get("statistics") or {}),
-                )
+            score_obj = Score(
+                id=score_id,
+                user_id=user_id,
+                beatmap_id=beatmap_id,
+                grade=(score.get("rank") or "D"),
+                accuracy=float(score.get("accuracy", 0) or 0),
+                combo=int(score.get("max_combo", 0) or 0),
+                mods=mods_to_strings(api_mods),
+                date=_parse_date(score.get("ended_at") or score.get("created_at")),
+                total_score=int(score.get("total_score", 0) or 0),
+                is_best=False,
+                **_catch_statistics(score.get("statistics") or {}),
             )
+            db.session.add(score_obj)
+            new_score_ids.append(score_obj.id)
             if user_id not in affected:
                 affected.append(user_id)
         except Exception:  # noqa: BLE001
@@ -183,7 +184,7 @@ def process_scores(api, scores: list[dict], cache_path: str) -> list[int]:
             db.session.rollback()
 
     db.session.commit()
-    return affected
+    return affected, new_score_ids
 
 
 # mod combos to pull per beatmap leaderboard (RX always added). Exotic combos
@@ -202,7 +203,8 @@ def scan_beatmap(api, beatmap_id: int, cache_path: str) -> list[int]:
             s.setdefault("ruleset_id", CATCH_RULESET_ID)
             s.setdefault("beatmap_id", beatmap_id)
             seen[int(s["id"])] = s
-    return process_scores(api, list(seen.values()), cache_path)
+    affected, _ = process_scores(api, list(seen.values()), cache_path)
+    return affected
 
 
 def firehose_tick(app, api) -> int:
@@ -233,12 +235,41 @@ def firehose_tick(app, api) -> int:
             return 0
 
         before = db.session.query(Score).count()
-        affected = process_scores(api, batch, cache_path)
+        affected, new_score_ids = process_scores(api, batch, cache_path)
         stored = db.session.query(Score).count() - before
         new_pp = recalc_score_pp(cache_path)
         if affected:
             recalc_best_scores(affected)
             recalc_player_pp(affected)
+
+            # Check for new top plays and send discord message
+            bot_token = os.environ.get("DISCORD_TOKEN")
+            channel_id = os.environ.get("DISCORD_CHANNEL_ID")
+            if bot_token and channel_id and new_score_ids:
+                new_bests = db.session.query(Score).filter(Score.id.in_(new_score_ids), Score.is_best.is_(True)).all()
+                for best in new_bests:
+                    if best.pp and best.pp > 0:
+                        try:
+                            import requests
+                            user = db.session.get(User, best.user_id)
+                            beatmap = db.session.get(Beatmap, best.beatmap_id)
+                            embed = {
+                                "title": f"New Top Play by {user.username}!",
+                                "description": f"**{user.username}** just set a new #1 score on **{beatmap.title} [{beatmap.version}]**!\n\n**Accuracy:** {best.accuracy:.2f}%\n**PP:** {best.pp:.0f}pp",
+                                "color": 15844367, # Gold
+                                "thumbnail": {
+                                    "url": f"https://a.ppy.sh/{user.id}"
+                                },
+                                "url": f"https://osu.ppy.sh/beatmaps/{beatmap.id}"
+                            }
+                            requests.post(
+                                f"https://discord.com/api/v10/channels/{channel_id}/messages",
+                                headers={"Authorization": f"Bot {bot_token}"},
+                                json={"embeds": [embed]},
+                                timeout=5
+                            )
+                        except Exception as e:
+                            log.error("Failed to send Discord message: %s", e)
 
         log.info(
             "firehose batch=%d newest_id=%d stored=%d pp_calc=%d (total=%d)",

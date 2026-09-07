@@ -298,6 +298,17 @@ def top_pp_scores(limit: int = 12) -> list[Score]:
     )
 
 
+def recent_scores(limit: int = 15) -> list[Score]:
+    """Every Relax osu!catch score as it lands, newest first."""
+    return (
+        db.session.query(Score)
+        .filter(Score.hidden.is_(False))
+        .order_by(Score.date.desc())
+        .limit(limit)
+        .all()
+    )
+
+
 def recent_high_pp(limit: int = 15, percentile: float = 0.90) -> list[Score]:
     """Recently-set scores whose pp lands in the top (1 - percentile) of all scores.
 

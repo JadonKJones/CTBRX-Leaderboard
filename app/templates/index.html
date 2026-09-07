@@ -3,7 +3,6 @@
 {% block winpath %}INDEX{% endblock %}
 {% block content %}
   <div style="text-align:center">
-    <span class="under-construction">&#128679; {{ SITE_NAME }} &mdash; osu!catch relax &#128679;</span>
     <h1>{{ SITE_NAME }}</h1>
     <p>Leaderboard of osu!lazer <b>osu!catch</b> scores set with the <b>Relax</b> mod.<br>
        Scores submit automatically from the global score feed, usually within a couple of minutes.</p>
@@ -28,14 +27,14 @@
         {% else %}<p class="muted">No #1 scores yet.</p>{% endfor %}
       </div>
       <div id="feed-hp" hidden>
-        {% for s in high_pp %}{{ m.score_card(s, rank=loop.index) }}
+        {% for s in high_pp %}{{ m.score_card(s) }}
         {% else %}<p class="muted">No scored plays yet.</p>{% endfor %}
       </div>
     </div>
 
     <div class="home-side">
       <h2>Trending this week</h2>
-      <table class="info">
+      <table class="info ranking">
         <thead><tr><th>Beatmap</th><th class="pp">Plays</th></tr></thead>
         <tbody>
           {% for t in trending %}

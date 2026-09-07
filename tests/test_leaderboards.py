@@ -15,9 +15,10 @@ from app.pipeline import recalc_best_scores, recalc_player_pp
 
 
 def test_mod_combo_normalisation():
-    assert mod_combo(["RX", "HD", "DTx1.5"]) == "DTHD"
+    assert mod_combo(["RX", "HD", "DTx1.5"]) == "HDDT"   # canonical order: DT sits late
     assert mod_combo(["RX"]) == "NM"
     assert mod_combo(["HD", "EZ", "RX"]) == "EZHD"
+    assert mod_combo(["DT", "EZ", "RX"]) == "EZDT"
 
 
 def _seed(db):

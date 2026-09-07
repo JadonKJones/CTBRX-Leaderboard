@@ -8,8 +8,9 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from flask import Blueprint, abort, jsonify, render_template, request
+from flask import Blueprint, abort, jsonify, render_template, request, url_for
 from sqlalchemy import func
+from sqlalchemy.orm import aliased
 
 from .extensions import db
 from .leaderboards import (
@@ -21,11 +22,12 @@ from .leaderboards import (
     player_profile_stats,
     player_timelines,
     recent_first_places,
-    top_pp_scores,
+    recent_high_pp,
     trending_beatmaps,
 )
 from .models import Beatmap, Score, User
 from .mods import ALLOWED_MODS, ALLOWED_MOD_SETTINGS
+from .pipeline import PP_STATUSES, RANKED_STATUSES
 from .pp import PP_VERSION
 
 bp = Blueprint("web", __name__)
@@ -99,7 +101,7 @@ def index():
         "index.html",
         stats=stats,
         first_places=recent_first_places(),
-        high_pp=top_pp_scores(),
+        high_pp=recent_high_pp(),
         trending=trending_beatmaps(),
     )
 
@@ -126,14 +128,34 @@ def leaderboard():
 
 @bp.route("/topscores")
 def topscores():
+    include_unranked = request.args.get("unranked") in ("1", "true")
+    statuses = PP_STATUSES if include_unranked else RANKED_STATUSES
     rows = (
         db.session.query(Score)
-        .filter(Score.pp.isnot(None), Score.hidden.is_(False), Score.is_best.is_(True))
+        .join(Beatmap, Score.beatmap_id == Beatmap.id)
+        .filter(
+            Score.pp.isnot(None), Score.hidden.is_(False), Score.is_best.is_(True),
+            Beatmap.status.in_(statuses),
+        )
         .order_by(Score.pp.desc())
         .limit(100)
         .all()
     )
-    return render_template("topscores.html", scores=rows)
+    podium = [
+        {
+            "rank": i + 1,
+            "name": s.user.username if s.user else "?",
+            "href": url_for("web.user_detail", key=s.user_id),
+            "avatar": f"https://a.ppy.sh/{s.user_id}",
+            "flag_cc": s.user.country_code if s.user else None,
+            "value": f"{s.pp:.0f}pp",
+            "sub": s.beatmap.title if s.beatmap else None,
+        }
+        for i, s in enumerate(rows[:3])
+    ]
+    return render_template(
+        "topscores.html", scores=rows, podium=podium, include_unranked=include_unranked
+    )
 
 
 @bp.route("/beatmaps")
@@ -212,7 +234,22 @@ def mods_index(combo: str = "NM"):
 
 @bp.route("/countries")
 def countries_board():
-    return render_template("countries.html", rows=country_leaderboard())
+    include_unranked = request.args.get("unranked") in ("1", "true")
+    rows = country_leaderboard(include_unranked=include_unranked)
+    podium = [
+        {
+            "rank": i + 1,
+            "name": r["country"],
+            "href": url_for("web.leaderboard", country=r["country"]),
+            "flag_cc": r["country"],
+            "value": f"{r['pp']:.0f}pp",
+            "sub": f"{r['players']} players",
+        }
+        for i, r in enumerate(rows[:3])
+    ]
+    return render_template(
+        "countries.html", rows=rows, podium=podium, include_unranked=include_unranked
+    )
 
 
 @bp.route("/faq")
@@ -238,17 +275,45 @@ def api_players():
     page = max(1, request.args.get("page", 1, type=int))
     country = request.args.get("countryCode")
     search = request.args.get("search")
+    include_unranked = request.args.get("includeUnranked") in ("1", "true")
+    pp_col = User.total_pp_all if include_unranked else User.total_pp
+    acc_col = User.total_accuracy_all if include_unranked else User.total_accuracy
 
-    q = db.session.query(User).filter(User.total_pp.isnot(None))
+    score_sum = (
+        db.session.query(Score.user_id, func.sum(Score.total_score).label("sc"))
+        .filter(Score.is_best.is_(True), Score.hidden.is_(False))
+        .group_by(Score.user_id)
+        .subquery()
+    )
+    higher = aliased(User)
+    global_rank = (
+        db.session.query(func.count(higher.id))
+        .filter(getattr(higher, pp_col.key) > pp_col)
+        .correlate(User)
+        .scalar_subquery()
+    )
+    q = (
+        db.session.query(User, score_sum.c.sc, (global_rank + 1).label("rk"))
+        .outerjoin(score_sum, score_sum.c.user_id == User.id)
+        .filter(pp_col.isnot(None))
+    )
     if country:
         q = q.filter(User.country_code == country)
     if search:
         q = q.filter(User.id == int(search)) if search.isdigit() else q.filter(
-            User.username.ilike(f"{search}%")
+            User.username.ilike(f"%{search}%")
         )
     total = q.count()
-    rows = q.order_by(User.total_pp.desc()).offset((page - 1) * PAGE).limit(PAGE).all()
-    return jsonify({"players": [_user_json(u) for u in rows], "total": total, "page": page})
+    rows = q.order_by(pp_col.desc()).offset((page - 1) * PAGE).limit(PAGE).all()
+    players = []
+    for u, sc, rk in rows:
+        d = _user_json(u)
+        d["totalPp"] = getattr(u, pp_col.key)
+        d["totalAccuracy"] = getattr(u, acc_col.key)
+        d["totalScore"] = int(sc or 0)
+        d["rank"] = int(rk)
+        players.append(d)
+    return jsonify({"players": players, "total": total, "page": page})
 
 
 @api_bp.get("/beatmaps")
@@ -296,6 +361,7 @@ def api_beatmaps():
 @api_bp.get("/mod-leaderboard/<combo>")
 def api_mod_leaderboard(combo: str):
     take = min(200, request.args.get("take", 100, type=int))
+    include_unranked = request.args.get("includeUnranked") in ("1", "true")
     return jsonify(
         [
             {
@@ -304,7 +370,8 @@ def api_mod_leaderboard(combo: str):
                 "pp": round(r["pp"], 2),
                 "accuracy": r["accuracy"],
                 "plays": r["plays"],
+                "score": r["score"],
             }
-            for r in mod_leaderboard(combo, limit=take)
+            for r in mod_leaderboard(combo, limit=take, include_unranked=include_unranked)
         ]
     )

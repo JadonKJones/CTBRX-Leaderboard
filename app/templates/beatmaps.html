@@ -1,11 +1,12 @@
 {% extends "base.html" %}
+{% import "_macros.html" as m %}
 {% block winpath %}BEATMAPS{% endblock %}
 {% block content %}
-  <h2>Beatmaps</h2>
+  {{ m.page_header('Beatmaps', 'Ranked osu!catch maps with at least one Relax score.') }}
   <div class="toolbar">
     <input type="search" id="search" placeholder="Search artist / title / difficulty / id..." value="{{ search }}" style="min-width:280px">
   </div>
-  <table class="info">
+  <table class="info ranking">
     <thead><tr><th>Beatmap</th><th class="acc">Stars</th><th class="pp">Plays</th></tr></thead>
     <tbody id="rows"><tr><td colspan="3" class="muted">Loading&hellip;</td></tr></tbody>
   </table>

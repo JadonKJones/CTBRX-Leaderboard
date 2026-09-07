@@ -1,7 +1,8 @@
 {% extends "base.html" %}
+{% import "_macros.html" as m %}
 {% block winpath %}FAQ{% endblock %}
 {% block content %}
-  <h2>FAQ</h2>
+  {{ m.page_header('FAQ') }}
 
   <details class="faq" open>
     <summary>How do I submit a score?</summary>

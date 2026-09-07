@@ -24,7 +24,8 @@ log = logging.getLogger("ctbrx.pipeline")
 
 CATCH_RULESET_ID = 2
 KEEP_STATUSES = ("ranked", "approved", "loved")
-RANKED_STATUSES = ("ranked", "approved")
+RANKED_STATUSES = ("ranked", "approved")       # count toward the official ranking
+PP_STATUSES = ("ranked", "approved", "loved")  # get pp computed at all
 CURSOR_KEY = "firehose_cursor"
 WEIGHT = 0.95
 TOP_N = 1000
@@ -253,13 +254,13 @@ def firehose_tick(app, api) -> int:
 #  pp / ranking
 # --------------------------------------------------------------------------- #
 def recalc_score_pp(cache_path: str, only_missing: bool = True) -> int:
-    """Compute pp for ranked/approved scores. Returns number updated."""
+    """Compute pp for ranked/approved/loved scores. Returns number updated."""
     from .pp import calculate_pp
 
     q = (
         db.session.query(Score)
         .join(Beatmap, Score.beatmap_id == Beatmap.id)
-        .filter(Beatmap.status.in_(RANKED_STATUSES))
+        .filter(Beatmap.status.in_(PP_STATUSES))
     )
     if only_missing:
         q = q.filter(Score.pp.is_(None))
@@ -323,16 +324,23 @@ def recalc_player_pp(user_ids: list[int] | None = None) -> None:
 
     for user in users.all():
         rows = (
-            db.session.query(Score)
+            db.session.query(Score, Beatmap.status)
+            .join(Beatmap, Score.beatmap_id == Beatmap.id)
             .filter(Score.user_id == user.id, Score.hidden.is_(False), Score.pp.isnot(None))
             .all()
         )
-        by_map: dict[int, Score] = {}
-        for s in rows:
-            cur = by_map.get(s.beatmap_id)
-            if cur is None or (s.pp or 0) > (cur.pp or 0):
-                by_map[s.beatmap_id] = s
-        user.total_pp, user.total_accuracy = _weighted_totals(list(by_map.values()))
+        best_ranked: dict[int, Score] = {}   # ranked/approved only -> total_pp
+        best_all: dict[int, Score] = {}      # + loved             -> total_pp_all
+        for s, status in rows:
+            buckets = [best_all]
+            if status in RANKED_STATUSES:
+                buckets.append(best_ranked)
+            for b in buckets:
+                cur = b.get(s.beatmap_id)
+                if cur is None or (s.pp or 0) > (cur.pp or 0):
+                    b[s.beatmap_id] = s
+        user.total_pp, user.total_accuracy = _weighted_totals(list(best_ranked.values()))
+        user.total_pp_all, user.total_accuracy_all = _weighted_totals(list(best_all.values()))
     db.session.commit()
 
 
@@ -403,11 +411,11 @@ def cleanup(app) -> None:
 
         recalc_score_pp(cache_path)
 
-        # strip pp from scores whose map is no longer ranked/approved
+        # strip pp from scores whose map is no longer ranked/approved/loved
         stale = (
             db.session.query(Score)
             .join(Beatmap, Score.beatmap_id == Beatmap.id)
-            .filter(Score.pp.isnot(None), ~Beatmap.status.in_(RANKED_STATUSES))
+            .filter(Score.pp.isnot(None), ~Beatmap.status.in_(PP_STATUSES))
             .all()
         )
         for s in stale:

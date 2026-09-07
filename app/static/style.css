@@ -11,19 +11,27 @@ body {
   color: #000;
   padding: 20px;
   line-height: 1.35;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 a { color: #0000EE; }
 a:visited { color: #551A8B; }
 
 .page {
-  max-width: 1000px;
+  max-width: 1240px;
+  width: 100%;
   margin: 0 auto;
   background: #c0c0c0;
   border: 2px solid #fff;
   border-right-color: #000;
   border-bottom-color: #000;
   box-shadow: 4px 4px 0 #000;
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
 }
+.content { flex: 1 0 auto; }
 
 .titlebar {
   background: linear-gradient(90deg, #000080, #1084d0);
@@ -46,9 +54,14 @@ a:visited { color: #551A8B; }
 .menubar {
   background: #c0c0c0; border-bottom: 1px solid #808080;
   padding: 5px 10px; font-size: 1rem; display: flex; gap: 18px; flex-wrap: wrap;
+  align-items: center;
 }
 .menubar a { color: #000; text-decoration: none; }
 .menubar a:hover, .menubar a.active { text-decoration: underline; }
+.menubar a.menubar__brand {
+  font-family: 'Press Start 2P', monospace; font-size: 0.7rem; color: #000080;
+}
+.theme-toggle { margin-left: auto; }
 
 .content { background: #fff; margin: 10px; border: 2px solid; border-color: #808080 #fff #fff #808080; padding: 20px; }
 
@@ -61,6 +74,10 @@ h2 {
 h2::before { content: "\1F4C1"; }
 h2:first-child { margin-top: 0; }
 h3 { font-family: 'Press Start 2P', monospace; font-size: 0.8rem; color: #000080; margin-bottom: 8px; line-height: 1.5; }
+
+.pagehead { margin-bottom: 18px; }
+.pagehead__title { font-family: 'Press Start 2P', monospace; font-size: 1.2rem; color: #000080; line-height: 1.5; }
+.pagehead__sub { margin-top: 8px; font-size: 1rem; }
 
 details.faq {
   border: 2px solid; border-color: #fff #808080 #808080 #fff;
@@ -123,6 +140,7 @@ table.info a:hover { text-decoration: underline; }
 .rank { color: #555; width: 44px; text-align: center; }
 .pp { color: #000080; font-weight: bold; text-align: right; white-space: nowrap; }
 .acc { text-align: center; white-space: nowrap; }
+.sc { text-align: right; white-space: nowrap; }
 .muted { color: #555; }
 
 .card {
@@ -132,13 +150,56 @@ table.info a:hover { text-decoration: underline; }
 .card .map-line { font-weight: bold; }
 .card .sub { color: #555; font-size: 1rem; }
 
+/* score rows */
+.score {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: #eee; border: 2px solid; border-color: #fff #808080 #808080 #fff;
+  padding: 8px 10px; margin-bottom: 6px;
+}
+.score__rank { font-family: 'Press Start 2P', monospace; font-size: 0.7rem; color: #555; min-width: 38px; }
+.score__grade { font-weight: bold; width: 30px; text-align: center; }
+.score__body { flex: 1 1 220px; min-width: 0; }
+.score__title { font-weight: bold; }
+.score__title a { text-decoration: none; }
+.score__meta { font-size: 1rem; color: #555; margin-top: 2px; }
+.score__acc { white-space: nowrap; }
+.score__pp { color: #000080; font-weight: bold; white-space: nowrap; min-width: 84px; text-align: right; }
+.score__pp b { font-size: 1.15rem; }
+.score__weight { color: #555; font-weight: normal; font-size: 0.8rem; margin-left: 4px; }
+
+/* podium - top 3 of a leaderboard */
+.podium { display: flex; gap: 10px; align-items: flex-end; justify-content: center; flex-wrap: wrap; margin-bottom: 22px; }
+.podium__slot {
+  flex: 1 1 150px; max-width: 220px; text-align: center; text-decoration: none; color: #000;
+  background: #eee; border: 2px solid; border-color: #fff #808080 #808080 #fff;
+  border-top: 5px solid #808080; padding: 12px 10px;
+}
+.podium__slot--1 { order: 2; border-top-color: #d4af37; background: #fff9e0; }
+.podium__slot--2 { order: 1; border-top-color: #a8a8a8; margin-bottom: -6px; }
+.podium__slot--3 { order: 3; border-top-color: #b3702d; background: #f7ede2; margin-bottom: -6px; }
+.podium__pos { font-family: 'Press Start 2P', monospace; font-size: 0.72rem; color: #555; }
+.podium__slot--1 .podium__pos { color: #b8860b; }
+.podium__avatar { width: 54px; height: 54px; border: 2px solid #808080; margin: 8px 0 6px; }
+.podium__slot--1 .podium__avatar { width: 70px; height: 70px; }
+.podium__cflag { margin: 10px 0 8px; }
+.podium__cflag img.flag { width: 48px; height: 36px; }
+.podium__name { font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.podium__value { font-family: 'Press Start 2P', monospace; font-size: 0.78rem; color: #000080; margin-top: 6px; }
+.podium__sub { font-size: 0.9rem; margin-top: 2px; }
+@media (max-width: 560px) {
+  .podium__slot { max-width: none; flex-basis: 100%; margin-bottom: 0; }
+  .podium__slot--1 { order: 0; }
+  .podium__slot--2 { order: 1; }
+  .podium__slot--3 { order: 2; }
+}
+
 /* top-3 medals - a beveled coloured left edge + tinted background */
-.card.medal-gold   { border-left: 6px solid #d4af37; background: #fff9e0; }
-.card.medal-silver { border-left: 6px solid #a8a8a8; background: #f4f4f4; }
-.card.medal-bronze { border-left: 6px solid #b3702d; background: #f7ede2; }
-.card.medal-gold   .grade { color: #b8860b; }
-.card.medal-silver .grade { color: #808080; }
-.card.medal-bronze .grade { color: #a05a1f; }
+.card.medal-gold,   .score.medal-gold   { border-left: 6px solid #d4af37; background: #fff9e0; }
+.card.medal-silver, .score.medal-silver { border-left: 6px solid #a8a8a8; background: #f4f4f4; }
+.card.medal-bronze, .score.medal-bronze { border-left: 6px solid #b3702d; background: #f7ede2; }
+.medal-gold   .grade, .medal-gold   .score__grade { color: #b8860b; }
+.medal-silver .grade, .medal-silver .score__grade { color: #808080; }
+.medal-bronze .grade, .medal-bronze .score__grade { color: #a05a1f; }
 
 .chip { display: inline-block; font-size: 0.8rem; background: #000080; color: #fff; padding: 2px 7px; margin: 2px 2px 0 0; }
 
@@ -179,11 +240,43 @@ img.flag { vertical-align: middle; border: 1px solid #808080; }
 
 .pager { display: flex; gap: 6px; align-items: center; justify-content: center; margin-top: 12px; }
 .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+.checkopt { display: inline-flex; align-items: center; gap: 5px; font-size: 0.95rem; cursor: pointer; white-space: nowrap; }
 
-.profile-head { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
-.profile-head img.avatar { width: 72px; height: 72px; border: 2px solid #808080; }
-.profile-head .name { font-family: 'Press Start 2P', monospace; font-size: 0.95rem; color: #000080; }
-.profile-head .big-rank { font-family: 'Press Start 2P', monospace; font-size: 1.4rem; color: #000080; margin-left: auto; }
+/* searchable country picker */
+.cpick { position: relative; display: inline-block; }
+.cpick__btn { display: inline-flex; align-items: center; gap: 6px; }
+.cpick__caret { font-size: 0.7rem; }
+.cpick__pop {
+  position: absolute; z-index: 30; top: 100%; left: 0; margin-top: 3px; width: 250px; padding: 5px;
+  background: #fff; border: 2px solid #808080; border-right-color: #fff; border-bottom-color: #fff;
+}
+.cpick__pop input { width: 100%; margin-bottom: 5px; }
+.cpick__list { max-height: 280px; overflow-y: auto; }
+.cpick__opt {
+  display: flex; align-items: center; gap: 7px; width: 100%; text-align: left;
+  background: #fff; border: 0; padding: 5px 7px; cursor: pointer; color: #000; font-size: 1rem;
+}
+.cpick__opt:hover { background: #000080; color: #fff; }
+.cpick__opt.is-sel { background: #dcdcdc; font-weight: bold; }
+
+.profile-cover { display: none; }
+.profile-info { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.profile-info__avatar { width: 72px; height: 72px; border: 2px solid #808080; }
+.profile-info__name { font-family: 'Press Start 2P', monospace; font-size: 0.95rem; color: #000080; }
+.profile-info__name a { text-decoration: none; }
+.profile-info__line { font-size: 1rem; margin-top: 5px; }
+.profile-info__ranks { margin-left: auto; display: flex; gap: 14px; flex-wrap: wrap; }
+.prank { display: flex; flex-direction: column; text-align: right; }
+.prank__label { font-size: 0.8rem; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+.prank__value { font-family: 'Press Start 2P', monospace; font-size: 0.85rem; color: #000080; margin-top: 3px; }
+.profile-values {
+  display: flex; flex-wrap: wrap; gap: 1px; margin-bottom: 12px;
+  border: 2px solid; border-color: #808080 #fff #fff #808080; background: #808080;
+}
+.pv { flex: 1 1 140px; padding: 7px 10px; background: #f0f0f0; }
+.pv__label { display: block; font-size: 0.8rem; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+.pv__value { display: block; font-weight: bold; font-size: 1.15rem; margin-top: 2px; }
+.profile-grades { margin-bottom: 16px; }
 
 footer.page-footer {
   text-align: center; padding: 18px; font-size: 1rem; color: #333;

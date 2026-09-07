@@ -2,8 +2,8 @@
 {% import "_macros.html" as m %}
 {% block winpath %}BEATMAP{% endblock %}
 {% block content %}
-  <h2>{{ beatmap.artist }} - {{ beatmap.title }}</h2>
-  <table class="info">
+  {{ m.page_header(beatmap.artist ~ ' - ' ~ beatmap.title, 'Mapped by set #' ~ beatmap.beatmapset_id) }}
+  <table class="info kv">
     <tbody>
       <tr><td class="label">Difficulty</td><td>{{ beatmap.difficulty_name }}</td></tr>
       <tr><td class="label">Star rating</td><td>{{ '%.2f'|format(beatmap.star_rating or beatmap.star_rating_normal) }}&#9733; <span class="muted">(osu!catch, nomod)</span></td></tr>

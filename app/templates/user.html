@@ -4,40 +4,41 @@
 {% block title %} &mdash; {{ user.username }}{% endblock %}
 {% block head %}<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>{% endblock %}
 {% block content %}
-  <div class="profile-head">
-    <img class="avatar" src="https://a.ppy.sh/{{ user.id }}" alt="">
-    <div>
-      <div class="name">{{ m.flag(user.country_code) }}
-        <a href="https://osu.ppy.sh/users/{{ user.id }}/fruits">{{ user.username }}</a></div>
-      <div>{{ '%.0f'|format(user.total_pp) if user.total_pp else '-' }}pp
-        &middot; <span class="muted">{{ '%.2f'|format(user.total_accuracy) if user.total_accuracy is not none else '-' }}%</span></div>
-      <div class="muted">
-        Lv {{ profile.level }} ({{ profile.level_progress }}%)
-        {% if user.join_date %}&middot; joined {{ user.join_date.strftime('%b %Y') }}{% endif %}
+  <div class="profile">
+    <div class="profile-cover"></div>
+    <div class="profile-info">
+      <img class="profile-info__avatar" src="https://a.ppy.sh/{{ user.id }}" alt="">
+      <div class="profile-info__main">
+        <div class="profile-info__name">
+          {{ m.flag(user.country_code) }}
+          <a href="https://osu.ppy.sh/users/{{ user.id }}/fruits">{{ user.username }}</a>
+        </div>
+        <div class="profile-info__line muted">
+          Lv {{ profile.level }} ({{ profile.level_progress }}%)
+          {% if user.join_date %}&middot; joined {{ user.join_date.strftime('%b %Y') }}{% endif %}
+        </div>
+      </div>
+      <div class="profile-info__ranks">
+        <div class="prank"><span class="prank__label">Global Ranking</span><span class="prank__value">#{{ profile.rank or '-' }}</span></div>
+        <div class="prank"><span class="prank__label">Country Ranking</span><span class="prank__value">{{ m.flag(user.country_code) }} #{{ profile.country_rank or '-' }}</span></div>
+        <div class="prank"><span class="prank__label">Performance</span><span class="prank__value">{{ '%.0f'|format(user.total_pp) if user.total_pp else '-' }}pp</span></div>
       </div>
     </div>
-    <div class="big-rank">#{{ profile.rank or '-' }}
-      <div class="muted" style="font-size:0.9rem">{{ m.flag(user.country_code) }} #{{ profile.country_rank or '-' }}</div>
+
+    <div class="profile-values">
+      <div class="pv"><span class="pv__label">Ranked Score</span><span class="pv__value">{{ profile.ranked_score|num }}</span></div>
+      <div class="pv"><span class="pv__label">Hit Accuracy</span><span class="pv__value">{{ '%.2f'|format(user.total_accuracy) if user.total_accuracy is not none else '-' }}%</span></div>
+      <div class="pv"><span class="pv__label">Play Count</span><span class="pv__value">{{ profile.playcount|num }}</span></div>
+      <div class="pv"><span class="pv__label">Total Score</span><span class="pv__value">{{ profile.total_score|num }}</span></div>
+      <div class="pv"><span class="pv__label">Total Hits</span><span class="pv__value">{{ profile.total_hits|num }}</span></div>
+      <div class="pv"><span class="pv__label">Maximum Combo</span><span class="pv__value">{{ profile.max_combo|num }}x</span></div>
+      <div class="pv"><span class="pv__label">Play Time</span><span class="pv__value">{{ profile.playtime }}</span></div>
+      <div class="pv"><span class="pv__label">Peak Rank</span><span class="pv__value">{% if profile.timelines.peak_rank %}#{{ profile.timelines.peak_rank.rank }}{% else %}&mdash;{% endif %}</span></div>
+      <div class="pv"><span class="pv__label">First Places</span><span class="pv__value">{{ profile.first_place_count }}</span></div>
     </div>
+
+    <div class="profile-grades">{{ m.grades(profile.grades) }}</div>
   </div>
-
-  <hr class="hr-rainbow">
-
-  <table class="info">
-    <tbody>
-      <tr><td class="label">Peak rank</td><td>{% if profile.timelines.peak_rank %}#{{ profile.timelines.peak_rank.rank }}
-        <span class="muted">on {{ profile.timelines.peak_rank.date }}</span>{% else %}&mdash;{% endif %}</td></tr>
-      <tr><td class="label">Ranked score</td><td>{{ profile.ranked_score|num }}</td></tr>
-      <tr><td class="label">Total score</td><td>{{ profile.total_score|num }}</td></tr>
-      <tr><td class="label">Play count</td><td>{{ profile.playcount|num }}</td></tr>
-      <tr><td class="label">Play time</td><td>{{ profile.playtime }} <span class="muted">(approx)</span></td></tr>
-      <tr><td class="label">Total hits</td><td>{{ profile.total_hits|num }}</td></tr>
-      <tr><td class="label">Max combo</td><td>{{ profile.max_combo|num }}x</td></tr>
-      <tr><td class="label">Hit accuracy</td><td>{{ '%.2f'|format(user.total_accuracy) if user.total_accuracy is not none else '-' }}%</td></tr>
-      <tr><td class="label">Grades</td><td>{{ m.grades(profile.grades) }}</td></tr>
-      <tr><td class="label">First places</td><td>{{ profile.first_place_count }}</td></tr>
-    </tbody>
-  </table>
 
   {% if profile.timelines.playcount %}
   <h2>Over time</h2>
@@ -52,8 +53,8 @@
   <script>
   const OSU = document.documentElement.getAttribute('data-theme') === 'osu';
   const tf = { family: OSU ? 'Inter' : 'VT323' };
-  Chart.defaults.color = OSU ? '#91a38f' : '#555';
-  Chart.defaults.borderColor = OSU ? '#2f382e' : '#ddd';
+  Chart.defaults.color = OSU ? '#a38f97' : '#555';
+  Chart.defaults.borderColor = OSU ? '#2a2226' : '#ddd';
   const DATA = {
     rank: {{ profile.timelines.rank | tojson }},
     pp: {{ profile.timelines.pp | tojson }},
@@ -90,9 +91,9 @@
     });
     charts.push({ chart: c, series });
   }
-  mk('rankc', DATA.rank, OSU ? '#a4f08f' : '#000080', { label: 'Global rank', fill: false, y: { reverse: true } });
-  mk('ppc', DATA.pp, OSU ? '#aad9a6' : '#b8860b', { label: 'Total pp' });
-  mk('pc', DATA.pc, OSU ? '#6cc1d6' : '#1084d0', { label: 'Submitted scores', stepped: true, y: { beginAtZero: true } });
+  mk('rankc', DATA.rank, OSU ? '#ff9ec4' : '#000080', { label: 'Global rank', fill: false, y: { reverse: true } });
+  mk('ppc', DATA.pp, OSU ? '#ffb3d1' : '#b8860b', { label: 'Total pp' });
+  mk('pc', DATA.pc, OSU ? '#7fc9d9' : '#1084d0', { label: 'Submitted scores', stepped: true, y: { beginAtZero: true } });
 
   document.querySelectorAll('#range button').forEach(b => b.onclick = () => {
     document.querySelectorAll('#range button').forEach(x => x.classList.remove('active'));
@@ -122,7 +123,7 @@
 
   {% if profile.most_played %}
   <h2>Most played</h2>
-  <table class="info">
+  <table class="info ranking">
     <thead><tr><th>Beatmap</th><th class="pp">Plays</th></tr></thead>
     <tbody>
       {% for mp in profile.most_played %}

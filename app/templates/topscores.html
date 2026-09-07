@@ -2,7 +2,12 @@
 {% import "_macros.html" as m %}
 {% block winpath %}TOPSCORES{% endblock %}
 {% block content %}
-  <h2>Top scores</h2>
+  {{ m.page_header('Top Scores', 'Highest-pp Relax osu!catch plays across all beatmaps.') }}
+  <div class="toolbar">
+    <label class="checkopt"><input type="checkbox" id="unranked" {{ 'checked' if include_unranked }}
+      onchange="location.search = this.checked ? '?unranked=1' : ''"> include unranked maps</label>
+  </div>
+  {{ m.podium(podium) }}
   {% for s in scores %}
     {{ m.score_card(s, rank=loop.index) }}
   {% else %}

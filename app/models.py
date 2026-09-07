@@ -13,8 +13,10 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=False)
     username = db.Column(db.String(64), nullable=False, default="")
     country_code = db.Column(db.String(4), nullable=False, default="XX")
-    total_pp = db.Column(db.Float, nullable=True, index=True)
+    total_pp = db.Column(db.Float, nullable=True, index=True)          # ranked/approved maps only
     total_accuracy = db.Column(db.Float, nullable=True)
+    total_pp_all = db.Column(db.Float, nullable=True, index=True)      # + loved maps
+    total_accuracy_all = db.Column(db.Float, nullable=True)
     join_date = db.Column(db.DateTime, nullable=True)
     updated_at = db.Column(db.DateTime, nullable=True, default=utcnow)
 

@@ -1,181 +1,240 @@
-/* CTBRX - "osu! website" theme, matched to osu.ppy.sh (osu-web lazer, base-hue 115).
-   Loaded always; every rule is scoped under html[data-theme="osu"] so it only
-   overrides the Win98 base when active. Palette pulled from the live site:
-   body #171c17, boxes #2f382e, muted text #91a38f, links #aad9a6, font Inter. */
+/* CTBRX - "osu! website" theme, matched to osu.ppy.sh (osu-web).
+   osu-web derives its whole palette from one HSL hue. User profiles run
+   hue 333 (the osu! brand pink): body #1c1719, boxes #2a2226, links #d9a6bd,
+   muted #a38f97. Change --hue below to retint the entire theme (115 = the
+   green seasonal look, 200 = classic blue).
+   Every rule is scoped under html[data-theme="osu"]. */
 
 html[data-theme="osu"] {
-  --bg: #171c17;
-  --box: #2f382e;
-  --box-2: #262d25;
-  --nav: #10140f;
-  --line: #3a453a;
-  --ink: #ffffff;
-  --muted: #91a38f;
-  --link: #aad9a6;
-  --accent: #a4f08f;      /* bright green, active states */
-  --yellow: #ffd966;
+  --hue: 333;
+
+  --bg:      hsl(var(--hue) 10% 10%);   /* --hsl-b6  ~#1c1719 */
+  --box:     hsl(var(--hue) 10% 15%);   /* --hsl-b5  ~#2a2226 */
+  --box-2:   hsl(var(--hue) 12% 12%);
+  --box-hi:  hsl(var(--hue) 10% 22%);
+  --nav:     hsl(var(--hue) 16% 8%);
+  --line:    hsl(var(--hue) 10% 25%);   /* --hsl-b3 */
+  --raised:  hsl(var(--hue) 10% 27%);   /* profile header ~#46393f */
+  --ink:     #ffffff;
+  --muted:   hsl(var(--hue) 10% 62%);   /* --hsl-f1 */
+  --link:    hsl(var(--hue) 42% 76%);   /* ~#d9a6bd */
+  --accent:  hsl(var(--hue) 100% 72%);  /* --hsl-h1 */
+  --yellow:  #ffd966;
+  --radius: 6px;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 html[data-theme="osu"] body {
   background: var(--bg);
   color: var(--ink);
   font-family: 'Inter', 'Helvetica Neue', Tahoma, Arial, sans-serif;
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 14px;
+  line-height: 1.55;
+  padding: 0;
 }
 
-html[data-theme="osu"] a { color: var(--link); }
+html[data-theme="osu"] a { color: var(--link); text-decoration: none; }
 html[data-theme="osu"] a:visited { color: var(--link); }
 html[data-theme="osu"] a:hover { color: #fff; }
 
+/* ---- shell ---------------------------------------------------------- */
 html[data-theme="osu"] .page {
-  max-width: 1200px;
-  background: var(--bg);
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
+  max-width: none; margin: 0; background: var(--bg);
+  border: 0; border-radius: 0; box-shadow: none;
+  align-items: center;   /* centre the capped .content; full-width children set width:100% */
 }
-
-/* top bar - osu's slim dark nav */
-html[data-theme="osu"] .titlebar {
-  background: var(--nav);
-  color: var(--link);
-  font-family: inherit;
-  font-weight: 700;
-  font-size: 0.9rem;
-  letter-spacing: 0;
-  text-transform: none;
-  padding: 14px 20px;
-}
-html[data-theme="osu"] .titlebar .btns { display: none; }
+html[data-theme="osu"] .titlebar { display: none; }
 
 html[data-theme="osu"] .menubar {
-  background: var(--nav);
-  border-bottom: 0;
-  padding: 0 14px;
-  gap: 0;
-  font-size: 0.9rem;
-  align-items: stretch;
+  background: var(--nav); border: 0;
+  padding: 0 24px; gap: 0; font-size: 14px;
+  align-items: stretch; position: sticky; top: 0; z-index: 20;
+  min-height: 50px; flex-wrap: nowrap;
 }
 html[data-theme="osu"] .menubar a {
-  color: var(--link);
-  padding: 13px 15px;
-  border-bottom: 4px solid transparent;
-  font-weight: 600;
+  color: var(--link); font-weight: 600; text-decoration: none;
+  padding: 15px 16px; border-bottom: 4px solid transparent;
+  display: flex; align-items: center; white-space: nowrap;
 }
-html[data-theme="osu"] .menubar a:hover { color: #fff; text-decoration: none; }
-html[data-theme="osu"] .menubar a.active {
-  color: #fff;
-  text-decoration: none;
-  border-bottom-color: var(--accent);
+html[data-theme="osu"] .menubar a:hover { color: #fff; }
+html[data-theme="osu"] .menubar a.active { color: #fff; border-bottom-color: var(--accent); }
+html[data-theme="osu"] .menubar a.menubar__brand {
+  font-family: inherit; font-size: 18px; font-weight: 800; color: #fff; padding-right: 26px;
 }
 
 html[data-theme="osu"] .content {
-  background: var(--bg);
-  margin: 0;
-  border: 0;
-  padding: 30px 32px 40px;
+  background: transparent; width: 100%; max-width: 1280px; margin: 0;
+  border: 0; padding: 34px 32px 70px;
+}
+html[data-theme="osu"] .menubar { width: 100%; padding: 0 32px; }
+html[data-theme="osu"] .page-footer { width: 100%; }
+
+html[data-theme="osu"] .page-footer {
+  background: var(--nav); color: var(--muted); border-top: 0; padding: 24px; margin-top: 40px;
 }
 
-html[data-theme="osu"] h1 {
-  font-family: inherit; font-weight: 700; color: #fff; font-size: 1.7rem; line-height: 1.2;
+/* ---- headings ---------------------------------------------------- */
+html[data-theme="osu"] .pagehead { margin-bottom: 26px; }
+html[data-theme="osu"] .pagehead__title {
+  font-family: inherit; font-weight: 700; color: #fff; font-size: 1.9rem; line-height: 1.15;
 }
+html[data-theme="osu"] .pagehead__sub { margin-top: 6px; font-size: 0.92rem; }
+
+html[data-theme="osu"] h1 { font-family: inherit; font-weight: 700; color: #fff; font-size: 1.7rem; }
 html[data-theme="osu"] h2 {
-  font-family: inherit; font-weight: 700; color: #fff; font-size: 1.15rem;
-  background: none; padding: 0 0 10px; margin: 34px 0 16px;
-  border-bottom: 1px solid var(--line);
+  font-family: inherit; font-weight: 700; color: #fff; font-size: 1.1rem;
+  background: none; padding: 0 0 8px; margin: 32px 0 15px; border-bottom: 1px solid var(--line);
 }
 html[data-theme="osu"] h2::before { content: none; }
-html[data-theme="osu"] h3 {
-  font-family: inherit; font-weight: 700; color: var(--ink); font-size: 1rem; line-height: 1.3;
-}
+html[data-theme="osu"] h3 { font-family: inherit; font-weight: 700; color: var(--ink); font-size: 0.98rem; }
 
-html[data-theme="osu"] .hr-rainbow { background: var(--line); height: 1px; }
+html[data-theme="osu"] .hr-rainbow { background: var(--line); height: 1px; margin: 20px 0; }
 
 html[data-theme="osu"] .under-construction {
   background: var(--box); color: var(--muted);
-  border: 1px dashed var(--line); transform: none; border-radius: 6px; font-weight: 600;
+  border: 1px dashed var(--line); transform: none; border-radius: var(--radius); font-weight: 600;
 }
 
+/* ---- controls -------------------------------------------------- */
 html[data-theme="osu"] .btn,
 html[data-theme="osu"] .menubar-actions a {
-  background: var(--box);
-  color: var(--ink);
-  border: 0;
-  border-radius: 6px;
-  padding: 7px 14px;
-  font-weight: 600;
+  background: var(--box); color: var(--ink); border: 0;
+  border-radius: var(--radius); padding: 7px 14px; font-weight: 600;
 }
-html[data-theme="osu"] .btn:hover { background: #3c473b; color: #fff; }
+html[data-theme="osu"] .btn:hover { background: var(--box-hi); color: #fff; }
 html[data-theme="osu"] .btn:active,
-html[data-theme="osu"] .btn.active {
-  background: var(--accent); color: #14200f;
-}
-html[data-theme="osu"] .btn[disabled] { color: var(--muted); background: var(--box); }
-html[data-theme="osu"] .btn[disabled]:hover { background: var(--box); }
+html[data-theme="osu"] .btn.active { background: var(--accent); color: hsl(var(--hue) 40% 12%); }
+html[data-theme="osu"] .btn[disabled],
+html[data-theme="osu"] .btn[disabled]:hover { color: var(--muted); background: var(--box); }
 
 html[data-theme="osu"] input[type=text],
 html[data-theme="osu"] input[type=search],
 html[data-theme="osu"] select {
-  background: #10140f; color: var(--ink);
-  border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px;
+  background: var(--box-2); color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 11px;
 }
 
-/* tables - osu's "floating rounded row" ranking style */
+html[data-theme="osu"] .menubar .theme-toggle {
+  align-self: center; margin-left: auto;
+  background: var(--box); color: var(--ink); border: 0; border-radius: 999px;
+  padding: 6px 14px; font-weight: 700;
+}
+html[data-theme="osu"] .menubar .theme-toggle:hover { background: var(--box-hi); }
+
+/* ---- country picker ------------------------------------------ */
+html[data-theme="osu"] .cpick__pop {
+  background: var(--box); border: 1px solid var(--line); border-radius: 8px;
+  width: 250px; padding: 7px; box-shadow: var(--shadow);
+}
+html[data-theme="osu"] .cpick__pop input { width: 100%; margin-bottom: 6px; }
+html[data-theme="osu"] .cpick__list { max-height: 280px; overflow-y: auto; }
+html[data-theme="osu"] .cpick__opt {
+  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+  background: none; border: 0; padding: 7px 9px; cursor: pointer; color: var(--ink);
+  border-radius: 5px; font-size: 0.9rem;
+}
+html[data-theme="osu"] .cpick__opt:hover { background: var(--box-hi); }
+html[data-theme="osu"] .cpick__opt.is-sel { background: var(--box-2); color: var(--accent); }
+
+/* ---- tables (osu "floating rounded row" ranking style) ------------ */
 html[data-theme="osu"] table.info {
-  border: 0; border-collapse: separate; border-spacing: 0 3px;
+  border: 0; border-collapse: separate; border-spacing: 0 3px; margin-bottom: 18px;
 }
 html[data-theme="osu"] table.info thead th {
   background: none; border: 0; color: var(--muted);
-  font-weight: 700; font-size: 0.78rem; letter-spacing: 0; text-transform: none;
-  padding: 4px 11px;
+  font-weight: 700; font-size: 0.76rem; letter-spacing: 0.4px; text-transform: none; padding: 4px 12px;
 }
 html[data-theme="osu"] table.info thead th.rank,
 html[data-theme="osu"] table.info thead th.pp { color: #fff; }
 html[data-theme="osu"] table.info tbody td {
-  background: var(--box); border: 0; padding: 9px 11px; color: var(--ink);
+  background: var(--box); border: 0; padding: 10px 12px; color: var(--ink); font-size: 0.9rem;
 }
-html[data-theme="osu"] table.info tbody tr td:first-child { border-radius: 6px 0 0 6px; }
-html[data-theme="osu"] table.info tbody tr td:last-child { border-radius: 0 6px 6px 0; }
-html[data-theme="osu"] table.info td.label {
-  background: var(--box-2); color: var(--muted); font-weight: 600;
-}
+html[data-theme="osu"] table.info tbody tr td:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+html[data-theme="osu"] table.info tbody tr td:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+html[data-theme="osu"] table.info tbody tr:hover td { background: var(--box-hi); }
 html[data-theme="osu"] table.info tbody tr:nth-child(even) td { background: var(--box); }
-html[data-theme="osu"] table.info tbody tr:nth-child(even) td.label { background: var(--box-2); }
-html[data-theme="osu"] table.info tbody tr:hover td { background: #3c473b; }
+html[data-theme="osu"] table.info tbody tr:nth-child(even):hover td { background: var(--box-hi); }
 html[data-theme="osu"] table.info th.sort:hover { background: none; color: #fff; }
+
+html[data-theme="osu"] table.info.kv tbody td { background: var(--box); }
+html[data-theme="osu"] table.info.kv td.label { color: var(--muted); font-weight: 600; width: 170px; }
 
 html[data-theme="osu"] .rank { color: var(--muted); }
 html[data-theme="osu"] .pp { color: #fff; font-weight: 700; }
 html[data-theme="osu"] .muted { color: var(--muted); }
 
+/* ---- generic card ---------------------------------------------- */
 html[data-theme="osu"] .card {
-  background: var(--box);
-  border: 0;
-  border-radius: 8px;
-  padding: 12px 14px;
+  background: var(--box); border: 0; border-radius: 8px; padding: 12px 14px; box-shadow: var(--shadow);
 }
 html[data-theme="osu"] .card .sub { color: var(--muted); }
-html[data-theme="osu"] .card.medal-gold   { background: #33321f; border-left: 4px solid #f0e4a8; }
-html[data-theme="osu"] .card.medal-silver { background: #2f3231; border-left: 4px solid #e0e0eb; }
-html[data-theme="osu"] .card.medal-bronze { background: #33291f; border-left: 4px solid #b88f7a; }
-html[data-theme="osu"] .card.medal-gold   .grade { color: #f0e4a8; }
-html[data-theme="osu"] .card.medal-silver .grade { color: #e0e0eb; }
-html[data-theme="osu"] .card.medal-bronze .grade { color: #d8a98f; }
 
-html[data-theme="osu"] .chip {
-  background: var(--box-2); color: var(--link);
-  border: 0; border-radius: 4px;
+/* ---- score rows ------------------------------------------------- */
+html[data-theme="osu"] .score {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--box); border: 0; border-radius: var(--radius);
+  padding: 9px 14px; margin-bottom: 4px;
 }
-html[data-theme="osu"] .mod {
-  background: var(--box-2); color: var(--ink);
-  border: 0; border-radius: 4px;
+html[data-theme="osu"] .score:hover { background: var(--box-hi); }
+html[data-theme="osu"] .score__rank { font-size: 0.8rem; font-weight: 700; color: var(--muted); min-width: 32px; }
+html[data-theme="osu"] .score__grade { width: 32px; text-align: center; font-weight: 800; font-size: 1.05rem; }
+html[data-theme="osu"] .score__body { flex: 1 1 220px; min-width: 0; }
+html[data-theme="osu"] .score__title { font-weight: 600; }
+html[data-theme="osu"] .score__title a { color: #fff; }
+html[data-theme="osu"] .score__meta { font-size: 0.78rem; margin-top: 2px; }
+html[data-theme="osu"] .score__acc { color: var(--muted); font-size: 0.9rem; white-space: nowrap; }
+html[data-theme="osu"] .score__pp { min-width: 82px; text-align: right; white-space: nowrap; color: #fff; }
+html[data-theme="osu"] .score__pp b { font-size: 1.15rem; font-weight: 800; color: var(--accent); }
+html[data-theme="osu"] .score__weight { color: var(--muted); font-weight: 400; font-size: 0.75rem; margin-left: 4px; }
+
+html[data-theme="osu"] .card.medal-gold,
+html[data-theme="osu"] .score.medal-gold   { background: var(--box); box-shadow: inset 4px 0 0 #f0e4a8; }
+html[data-theme="osu"] .card.medal-silver,
+html[data-theme="osu"] .score.medal-silver { background: var(--box); box-shadow: inset 4px 0 0 #e0e0eb; }
+html[data-theme="osu"] .card.medal-bronze,
+html[data-theme="osu"] .score.medal-bronze { background: var(--box); box-shadow: inset 4px 0 0 #b88f7a; }
+html[data-theme="osu"] .medal-gold .score__grade   { color: #f0e4a8; }
+html[data-theme="osu"] .medal-silver .score__grade { color: #e0e0eb; }
+html[data-theme="osu"] .medal-bronze .score__grade { color: #d8a98f; }
+
+/* ---- podium ------------------------------------------------- */
+html[data-theme="osu"] .podium {
+  display: flex; gap: 12px; align-items: flex-end; justify-content: center;
+  flex-wrap: wrap; margin-bottom: 26px;
+}
+html[data-theme="osu"] .podium__slot {
+  flex: 1 1 150px; max-width: 230px; text-align: center; color: var(--ink);
+  background: var(--box); border: 0; border-top: 4px solid var(--line);
+  border-radius: 0 0 8px 8px; padding: 14px 12px; box-shadow: var(--shadow);
+}
+html[data-theme="osu"] .podium__slot--1 { order: 2; border-top-color: #f0e4a8; padding-bottom: 24px; }
+html[data-theme="osu"] .podium__slot--2 { order: 1; border-top-color: #e0e0eb; }
+html[data-theme="osu"] .podium__slot--3 { order: 3; border-top-color: #b88f7a; }
+html[data-theme="osu"] .podium__pos { font-size: 0.8rem; font-weight: 700; color: var(--muted); }
+html[data-theme="osu"] .podium__avatar { width: 60px; height: 60px; border-radius: 10px; margin: 10px 0 6px; }
+html[data-theme="osu"] .podium__slot--1 .podium__avatar { width: 80px; height: 80px; }
+html[data-theme="osu"] .podium__cflag { margin: 12px 0 8px; }
+html[data-theme="osu"] .podium__cflag img.flag { width: 52px; height: 39px; border-radius: 4px; }
+html[data-theme="osu"] .podium__name {
+  font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+html[data-theme="osu"] .podium__value { font-weight: 800; color: var(--accent); margin-top: 6px; }
+html[data-theme="osu"] .podium__sub { font-size: 0.8rem; margin-top: 2px; }
+@media (max-width: 560px) {
+  html[data-theme="osu"] .podium__slot { max-width: none; flex-basis: 100%; padding-bottom: 14px; }
+  html[data-theme="osu"] .podium__slot--1 { order: 0; }
+  html[data-theme="osu"] .podium__slot--2 { order: 1; }
+  html[data-theme="osu"] .podium__slot--3 { order: 2; }
 }
 
+/* ---- chips / mods / flags ------------------------------------- */
+html[data-theme="osu"] .chip { background: var(--box-2); color: var(--link); border: 0; border-radius: 4px; }
+html[data-theme="osu"] .mod { background: var(--box-2); color: var(--ink); border: 0; border-radius: 4px; padding: 2px 6px; }
 html[data-theme="osu"] img.flag { border: 0; border-radius: 3px; }
 
+/* ---- grade tallies ------------------------------------------- */
 html[data-theme="osu"] .grades .gr {
-  background: #10140f; border: 1px solid var(--line); border-radius: 5px;
+  background: var(--box-2); border: 1px solid var(--line); border-radius: 5px;
   font-family: inherit; font-weight: 700; font-size: 0.72rem;
 }
 html[data-theme="osu"] .grades .gr b { font-family: inherit; color: var(--ink); }
@@ -185,48 +244,89 @@ html[data-theme="osu"] .grade-A { color: #8ae06f; }
 html[data-theme="osu"] .grade-B { color: #ffb066; }
 html[data-theme="osu"] .grade-C, html[data-theme="osu"] .grade-D { color: #ff7070; }
 
-html[data-theme="osu"] details.faq {
-  background: var(--box); border: 0; border-radius: 8px;
-}
-html[data-theme="osu"] details.faq > summary {
-  font-family: inherit; font-weight: 700; color: var(--ink); font-size: 0.98rem;
-}
+/* ---- FAQ dropdowns ----------------------------------------- */
+html[data-theme="osu"] details.faq { background: var(--box); border: 0; border-radius: 8px; box-shadow: var(--shadow); }
+html[data-theme="osu"] details.faq > summary { font-family: inherit; font-weight: 700; color: var(--ink); font-size: 0.98rem; }
 html[data-theme="osu"] details.faq[open] > summary {
-  background: none; color: #fff;
-  border-bottom: 1px solid var(--line);
-  box-shadow: inset 3px 0 0 var(--accent);
+  background: none; color: #fff; border-bottom: 1px solid var(--line); box-shadow: inset 3px 0 0 var(--accent);
 }
 html[data-theme="osu"] details.faq > summary:hover { text-decoration: none; color: #fff; }
 html[data-theme="osu"] .faq-body { background: transparent; border-top: 0; }
 
+/* ---- home --------------------------------------------------- */
 html[data-theme="osu"] .statgrid .card { text-align: center; }
 html[data-theme="osu"] .statgrid .big { font-family: inherit; font-weight: 800; color: #fff; }
-
-html[data-theme="osu"] .profile-head img.avatar { border: 0; border-radius: 10px; }
-html[data-theme="osu"] .profile-head .name {
-  font-family: inherit; font-weight: 700; color: #fff; font-size: 1.3rem;
-}
-html[data-theme="osu"] .profile-head .big-rank {
-  font-family: inherit; font-weight: 700; color: var(--accent); font-size: 1.6rem;
-}
-
 html[data-theme="osu"] .home-side { top: 12px; }
 
-html[data-theme="osu"] footer.page-footer {
-  background: var(--nav); color: var(--muted);
-  border-top: 0;
+/* ---- profile ---------------------------------------------- */
+html[data-theme="osu"] .profile {
+  background: var(--box); border-radius: 10px; overflow: hidden; margin-bottom: 24px; box-shadow: var(--shadow);
+}
+html[data-theme="osu"] .profile-cover {
+  display: block; height: 170px;
+  background:
+    linear-gradient(hsl(var(--hue) 20% 8% / 0), hsl(var(--hue) 18% 10% / 0.85)),
+    linear-gradient(115deg, hsl(var(--hue) 45% 40%), hsl(var(--hue) 55% 62%));
+}
+html[data-theme="osu"] .profile-info {
+  display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
+  padding: 14px 22px; margin: -34px 0 0; position: relative; background: var(--raised);
+}
+html[data-theme="osu"] .profile-info__avatar {
+  width: 84px; height: 84px; border-radius: 10px; border: 0; margin-top: -44px;
+}
+html[data-theme="osu"] .profile-info__main { flex: 1 1 200px; }
+html[data-theme="osu"] .profile-info__name { font-family: inherit; font-size: 1.55rem; font-weight: 700; color: #fff; }
+html[data-theme="osu"] .profile-info__name a { color: #fff; }
+html[data-theme="osu"] .profile-info__line { font-size: 0.85rem; margin-top: 4px; }
+html[data-theme="osu"] .profile-info__ranks { display: flex; gap: 24px; padding-bottom: 4px; flex-wrap: wrap; }
+html[data-theme="osu"] .prank { text-align: right; }
+html[data-theme="osu"] .prank__label {
+  display: block; font-family: inherit; font-size: 0.68rem;
+  text-transform: uppercase; letter-spacing: 1px; color: var(--muted);
+}
+html[data-theme="osu"] .prank__value { font-family: inherit; font-size: 1.5rem; font-weight: 400; color: #fff; }
+html[data-theme="osu"] .prank:last-child .prank__value { color: var(--accent); }
+
+html[data-theme="osu"] .profile-values {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  column-gap: 40px; row-gap: 0;
+  padding: 10px 22px 16px; margin: 0; border: 0; border-top: 1px solid var(--line); background: transparent;
+  box-shadow: inset 0 2px 3px -1px rgba(0, 0, 0, 0.25);
+}
+html[data-theme="osu"] .pv {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding: 9px 0; background: transparent; border-bottom: 1px solid hsl(var(--hue) 10% 18%);
+}
+html[data-theme="osu"] .pv__label {
+  font-size: 0.8rem; text-transform: none; letter-spacing: 0; color: var(--muted); font-weight: 600;
+}
+html[data-theme="osu"] .pv__value {
+  font-size: 0.95rem; font-weight: 700; color: #fff; margin: 0; text-align: right; white-space: nowrap;
+}
+html[data-theme="osu"] .profile-grades { padding: 14px 22px 20px; }
+html[data-theme="osu"] .profile-grades .grades { gap: 8px; }
+html[data-theme="osu"] .profile-grades .gr {
+  flex-direction: column; align-items: center; gap: 2px;
+  padding: 7px 14px; border: 0; background: var(--box-2); border-radius: 999px; font-size: 0.7rem;
+}
+html[data-theme="osu"] .profile-grades .gr b { font-size: 0.95rem; }
+html[data-theme="osu"] .profile-grades .gr-X  { background: hsl(45 90% 55% / 0.18); }
+html[data-theme="osu"] .profile-grades .gr-XH { background: hsl(48 15% 60% / 0.18); }
+html[data-theme="osu"] .profile-grades .gr-S  { background: hsl(200 90% 55% / 0.18); }
+html[data-theme="osu"] .profile-grades .gr-SH { background: hsl(200 15% 60% / 0.18); }
+html[data-theme="osu"] .profile-grades .gr-A  { background: hsl(120 60% 50% / 0.18); }
+
+@media (max-width: 720px) {
+  html[data-theme="osu"] .menubar { overflow-x: auto; }
+  html[data-theme="osu"] .profile-info { align-items: center; }
+  html[data-theme="osu"] .profile-info__ranks { width: 100%; justify-content: flex-start; }
+  html[data-theme="osu"] .prank { text-align: left; }
 }
 
-/* theme toggle */
-.theme-toggle { margin-left: auto; cursor: pointer; font: inherit; }
+/* ---- theme toggle in the Win98 skin (base, unscoped) -------------- */
 .menubar .theme-toggle {
   background: #c0c0c0; border: 2px solid #fff;
   border-right-color: #404040; border-bottom-color: #404040;
-  padding: 3px 10px; color: #000;
+  padding: 3px 10px; color: #000; cursor: pointer; font: inherit;
 }
-html[data-theme="osu"] .menubar .theme-toggle {
-  align-self: center;
-  background: var(--box); color: var(--ink); border: 0; border-radius: 999px;
-  padding: 6px 14px; font-weight: 700;
-}
-html[data-theme="osu"] .menubar .theme-toggle:hover { background: #3c473b; }

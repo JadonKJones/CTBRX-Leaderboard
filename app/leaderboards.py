@@ -9,35 +9,46 @@ from datetime import datetime, timezone
 
 from .extensions import db
 from .models import Beatmap, RankSnapshot, Score, User
-from .pipeline import WEIGHT, _weighted_totals
+from .pipeline import PP_STATUSES, RANKED_STATUSES, WEIGHT, _weighted_totals
+
+
+# canonical display order for mod acronyms (rate mods DT/NC/HT/DC sit late, FL last-ish)
+MOD_ORDER = ["EZ", "HD", "HR", "DT", "NC", "HT", "DC", "FL", "MR", "NF", "SD", "PF", "CL", "AC"]
 
 
 def mod_combo(mods: list[str] | None) -> str:
-    """['RX', 'HD', 'DTx1.5'] -> 'DTHD'   (RX stripped, rates normalised, sorted)."""
-    base = sorted(
-        {m.split("x")[0].upper() for m in (mods or [])} - {"RX", ""}
-    )
-    return "".join(base) or "NM"
+    """['RX', 'DTx1.5', 'HD'] -> 'HDDT'   (RX stripped, rates normalised, canonical order)."""
+    base = {m.split("x")[0].upper() for m in (mods or [])} - {"RX", ""}
+    ordered = sorted(base, key=lambda m: (MOD_ORDER.index(m) if m in MOD_ORDER else 99, m))
+    return "".join(ordered) or "NM"
 
 
-def _visible_scores():
+def _visible_scores(include_unranked: bool = False):
     """Lightweight rows (not ORM objects) for the mod-combo aggregations.
 
     mods live in a JSON column so the grouping has to happen in Python; pulling
-    only the five needed columns keeps it cheap.
+    only the needed columns keeps it cheap. By default only ranked/approved maps
+    count; include_unranked also folds in loved maps.
     """
+    statuses = PP_STATUSES if include_unranked else RANKED_STATUSES
     return (
         db.session.query(
-            Score.user_id, Score.beatmap_id, Score.pp, Score.accuracy, Score.mods
+            Score.user_id, Score.beatmap_id, Score.pp, Score.accuracy,
+            Score.total_score, Score.mods,
         )
-        .filter(Score.hidden.is_(False), Score.pp.isnot(None))
+        .join(Beatmap, Score.beatmap_id == Beatmap.id)
+        .filter(
+            Score.hidden.is_(False),
+            Score.pp.isnot(None),
+            Beatmap.status.in_(statuses),
+        )
         .all()
     )
 
 
 def available_combos(min_scores: int = 3) -> list[tuple[str, int]]:
     counts: dict[str, int] = {}
-    for s in _visible_scores():
+    for s in _visible_scores(include_unranked=True):
         c = mod_combo(s.mods)
         counts[c] = counts.get(c, 0) + 1
     combos = [(c, n) for c, n in counts.items() if n >= min_scores]
@@ -45,10 +56,10 @@ def available_combos(min_scores: int = 3) -> list[tuple[str, int]]:
     return combos
 
 
-def mod_leaderboard(combo: str, limit: int = 100) -> list[dict]:
+def mod_leaderboard(combo: str, limit: int = 100, include_unranked: bool = False) -> list[dict]:
     combo = combo.upper()
     best_by_user: dict[int, dict[int, Score]] = {}
-    for s in _visible_scores():
+    for s in _visible_scores(include_unranked=include_unranked):
         if mod_combo(s.mods) != combo:
             continue
         maps = best_by_user.setdefault(s.user_id, {})
@@ -59,9 +70,13 @@ def mod_leaderboard(combo: str, limit: int = 100) -> list[dict]:
     rows = []
     for uid, maps in best_by_user.items():
         total_pp, total_acc = _weighted_totals(list(maps.values()))
-        rows.append(
-            {"user_id": uid, "pp": total_pp or 0.0, "accuracy": total_acc, "plays": len(maps)}
-        )
+        rows.append({
+            "user_id": uid,
+            "pp": total_pp or 0.0,
+            "accuracy": total_acc,
+            "plays": len(maps),
+            "score": sum(s.total_score or 0 for s in maps.values()),
+        })
     rows.sort(key=lambda r: r["pp"], reverse=True)
     rows = rows[:limit]
 
@@ -74,20 +89,33 @@ def mod_leaderboard(combo: str, limit: int = 100) -> list[dict]:
     return rows
 
 
-def country_leaderboard() -> list[dict]:
+def country_leaderboard(include_unranked: bool = False) -> list[dict]:
+    from sqlalchemy import func
+
+    pp_col = User.total_pp_all if include_unranked else User.total_pp
+
+    score_by_user = dict(
+        db.session.query(Score.user_id, func.sum(Score.total_score))
+        .filter(Score.is_best.is_(True), Score.hidden.is_(False))
+        .group_by(Score.user_id)
+        .all()
+    )
+
     rows: dict[str, dict] = {}
     users = (
         db.session.query(User)
-        .filter(User.total_pp.isnot(None))
-        .order_by(User.total_pp.desc())
+        .filter(pp_col.isnot(None))
+        .order_by(pp_col.desc())
         .all()
     )
     for u in users:
         c = rows.setdefault(
-            u.country_code, {"country": u.country_code, "players": 0, "pp": 0.0, "top": u}
+            u.country_code,
+            {"country": u.country_code, "players": 0, "pp": 0.0, "score": 0, "top": u},
         )
         # weighted so a country isn't just "who has the most accounts"
-        c["pp"] += (u.total_pp or 0.0) * (WEIGHT ** c["players"])
+        c["pp"] += (getattr(u, pp_col.key) or 0.0) * (WEIGHT ** c["players"])
+        c["score"] += score_by_user.get(u.id, 0) or 0
         c["players"] += 1
     out = list(rows.values())
     out.sort(key=lambda r: r["pp"], reverse=True)
@@ -265,6 +293,28 @@ def top_pp_scores(limit: int = 12) -> list[Score]:
         db.session.query(Score)
         .filter(Score.is_best.is_(True), Score.pp.isnot(None), Score.hidden.is_(False))
         .order_by(Score.pp.desc())
+        .limit(limit)
+        .all()
+    )
+
+
+def recent_high_pp(limit: int = 15, percentile: float = 0.90) -> list[Score]:
+    """Recently-set scores whose pp lands in the top (1 - percentile) of all scores.
+
+    A chronological feed (newest first), like Akatsuki's "High PP" panel.
+    """
+    pps = sorted(
+        p for (p,) in db.session.query(Score.pp)
+        .filter(Score.pp.isnot(None), Score.hidden.is_(False))
+        .all()
+    )
+    if not pps:
+        return []
+    threshold = pps[min(len(pps) - 1, int(len(pps) * percentile))]
+    return (
+        db.session.query(Score)
+        .filter(Score.pp >= threshold, Score.hidden.is_(False))
+        .order_by(Score.date.desc())
         .limit(limit)
         .all()
     )

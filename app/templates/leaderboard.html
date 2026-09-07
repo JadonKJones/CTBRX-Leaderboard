@@ -1,20 +1,28 @@
 {% extends "base.html" %}
+{% import "_macros.html" as m %}
 {% block winpath %}LEADERBOARD{% endblock %}
 {% block content %}
-  <h2>Leaderboard</h2>
+  {{ m.page_header('Ranking', 'Players ranked by weighted Relax osu!catch pp.') }}
+
   <div class="toolbar">
-    <label>Country
-      <select id="country">
-        <option value="">&mdash; all &mdash;</option>
-        {% for c in countries %}<option value="{{ c }}" {{ 'selected' if c == country }}>{{ c }}</option>{% endfor %}
-      </select>
-    </label>
+    <div class="cpick" id="cpick">
+      <button type="button" class="btn cpick__btn" id="cpick-btn">
+        <span id="cpick-label">All countries</span> <span class="cpick__caret">&#9662;</span>
+      </button>
+      <div class="cpick__pop" id="cpick-pop" hidden>
+        <input type="text" id="cpick-search" placeholder="Filter countries&hellip;" autocomplete="off">
+        <div class="cpick__list" id="cpick-list"></div>
+      </div>
+    </div>
     <input type="search" id="search" placeholder="Search player..." value="{{ search }}">
+    <label class="checkopt"><input type="checkbox" id="unranked"> include unranked maps</label>
   </div>
 
-  <table class="info">
-    <thead><tr><th class="rank">#</th><th>Player</th><th class="acc">Accuracy</th><th class="pp">PP</th></tr></thead>
-    <tbody id="rows"><tr><td colspan="4" class="muted">Loading&hellip;</td></tr></tbody>
+  <div id="podium"></div>
+
+  <table class="info ranking">
+    <thead><tr><th class="rank">#</th><th>Player</th><th class="acc">Accuracy</th><th class="sc">Score</th><th class="pp">PP</th></tr></thead>
+    <tbody id="rows"><tr><td colspan="5" class="muted">Loading&hellip;</td></tr></tbody>
   </table>
 
   <div class="pager">
@@ -24,43 +32,95 @@
   </div>
 
 <script>
+const ROOT = '{{ request.script_root }}';
 const SIZE = {{ page_size }};
+const COUNTRIES = {{ countries | tojson }};
 let page = {{ page if page > 0 else 1 }};
+let country = {{ country | tojson }};
 const rows = document.getElementById('rows');
-const q = {country: document.getElementById('country'), search: document.getElementById('search')};
+const search = document.getElementById('search');
+const unranked = document.getElementById('unranked');
 
-function flag(cc){ return cc && cc !== 'XX' ? `<img src="https://flagcdn.com/20x15/${cc.toLowerCase()}.png" width="20" height="15" style="vertical-align:middle"> ` : ''; }
+function flag(cc){ return cc && cc !== 'XX' ? `<img class="flag" src="https://flagcdn.com/24x18/${cc.toLowerCase()}.png" width="24" height="18"> ` : ''; }
+
+/* ---- country picker (searchable, with flags) ---- */
+const cp = {
+  btn: document.getElementById('cpick-btn'),
+  label: document.getElementById('cpick-label'),
+  pop: document.getElementById('cpick-pop'),
+  search: document.getElementById('cpick-search'),
+  list: document.getElementById('cpick-list'),
+};
+function cpItems(filter){
+  const f = filter.trim().toUpperCase();
+  const opts = [''].concat(COUNTRIES).filter(c => !f || c.toUpperCase().includes(f) || (!c && 'ALL'.includes(f)));
+  return opts.map(c => `<button type="button" class="cpick__opt${c === country ? ' is-sel' : ''}" data-cc="${c}">
+    ${c ? flag(c) + c : '<span class="cpick__all">All countries</span>'}</button>`).join('');
+}
+function cpRender(){ cp.list.innerHTML = cpItems(cp.search.value); }
+function cpLabel(){ cp.label.innerHTML = country ? flag(country) + country : 'All countries'; }
+cp.btn.onclick = () => {
+  const open = !cp.pop.hidden;
+  cp.pop.hidden = open;
+  if (!open){ cp.search.value = ''; cpRender(); cp.search.focus(); }
+};
+cp.search.oninput = cpRender;
+cp.list.onclick = e => {
+  const b = e.target.closest('.cpick__opt');
+  if (!b) return;
+  country = b.dataset.cc;
+  cpLabel(); cp.pop.hidden = true;
+  page = 1; load();
+};
+document.addEventListener('click', e => { if (!document.getElementById('cpick').contains(e.target)) cp.pop.hidden = true; });
+cpLabel();
 
 async function load(){
-  rows.innerHTML = '<tr><td colspan="4" class="muted">Loading&hellip;</td></tr>';
+  rows.innerHTML = '<tr><td colspan="5" class="muted">Loading&hellip;</td></tr>';
   const p = new URLSearchParams({page});
-  if (q.country.value) p.set('countryCode', q.country.value);
-  if (q.search.value) p.set('search', q.search.value);
-  const r = await fetch('{{ request.script_root }}/api/players?' + p);
-  const data = await r.json();
-  const start = (page - 1) * SIZE;
-  if (!data.players.length){ rows.innerHTML = '<tr><td colspan="4" class="muted">No players.</td></tr>'; }
-  else rows.innerHTML = data.players.map((u, i) => `
+  if (country) p.set('countryCode', country);
+  if (search.value) p.set('search', search.value);
+  if (unranked.checked) p.set('includeUnranked', '1');
+  const data = await (await fetch(ROOT + '/api/players?' + p)).json();
+
+  if (!data.players.length){ rows.innerHTML = '<tr><td colspan="5" class="muted">No players.</td></tr>'; }
+  else rows.innerHTML = data.players.map(u => `
     <tr>
-      <td class="rank">#${start + i + 1}</td>
-      <td>${flag(u.countryCode)}<a href="{{ request.script_root }}/users/${u.id}">${u.username}</a></td>
+      <td class="rank">#${u.rank}</td>
+      <td>${flag(u.countryCode)}<a href="${ROOT}/users/${u.id}">${u.username}</a></td>
       <td class="acc">${u.totalAccuracy === null ? '-' : u.totalAccuracy.toFixed(2)}%</td>
+      <td class="sc">${(u.totalScore || 0).toLocaleString()}</td>
       <td class="pp">${u.totalPp === null ? '-' : u.totalPp.toFixed(0)}</td>
     </tr>`).join('');
+
+  const pod = document.getElementById('podium');
+  if (page === 1 && !country && !search.value) {
+    renderPodium(pod, data.players.slice(0, 3).map(u => ({
+      rank: u.rank,
+      name: u.username,
+      href: ROOT + '/users/' + u.id,
+      avatar: 'https://a.ppy.sh/' + u.id,
+      flagHtml: podiumFlag(u.countryCode),
+      value: (u.totalPp === null ? '-' : u.totalPp.toFixed(0)) + 'pp',
+      sub: (u.totalScore || 0).toLocaleString(),
+    })));
+  } else { pod.innerHTML = ''; }
+
   const pages = Math.max(1, Math.ceil((data.total || 0) / SIZE));
   document.getElementById('pageinfo').textContent = `page ${page} / ${pages} (${data.total} players)`;
   document.getElementById('prev').disabled = page <= 1;
   document.getElementById('next').disabled = page >= pages;
+
   const url = new URLSearchParams();
   if (page > 1) url.set('page', page);
-  if (q.country.value) url.set('country', q.country.value);
-  if (q.search.value) url.set('search', q.search.value);
-  history.replaceState(null, '', '/leaderboard' + (url.toString() ? '?' + url : ''));
+  if (country) url.set('country', country);
+  if (search.value) url.set('search', search.value);
+  history.replaceState(null, '', ROOT + '/leaderboard' + (url.toString() ? '?' + url : ''));
 }
 document.getElementById('prev').onclick = () => { if (page > 1){ page--; load(); } };
 document.getElementById('next').onclick = () => { page++; load(); };
-q.country.onchange = () => { page = 1; load(); };
-let t; q.search.oninput = () => { clearTimeout(t); t = setTimeout(() => { page = 1; load(); }, 400); };
+let t; search.oninput = () => { clearTimeout(t); t = setTimeout(() => { page = 1; load(); }, 400); };
+unranked.onchange = () => { page = 1; load(); };
 load();
 </script>
 {% endblock %}

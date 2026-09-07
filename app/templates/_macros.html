@@ -1,5 +1,29 @@
 {% macro flag(cc) %}{% if cc and cc != 'XX' %}<img class="flag" src="https://flagcdn.com/24x18/{{ cc|lower }}.png" width="24" height="18" alt="{{ cc }}" title="{{ cc }}">{% endif %}{% endmacro %}
 
+{% macro page_header(title, subtitle=None) %}
+<div class="pagehead">
+  <h1 class="pagehead__title">{{ title }}</h1>
+  {% if subtitle %}<div class="pagehead__sub muted">{{ subtitle }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro podium(items) %}
+{% if items %}
+<div class="podium">
+  {% for it in items %}
+  <a class="podium__slot podium__slot--{{ it.rank }}"{% if it.href %} href="{{ it.href }}"{% endif %}>
+    <div class="podium__pos">#{{ it.rank }}</div>
+    {% if it.avatar %}<img class="podium__avatar" src="{{ it.avatar }}" alt="">
+    {% elif it.flag_cc %}<div class="podium__cflag">{{ flag(it.flag_cc) }}</div>{% endif %}
+    <div class="podium__name">{% if it.avatar and it.flag_cc %}{{ flag(it.flag_cc) }}{% endif %}{{ it.name }}</div>
+    <div class="podium__value">{{ it.value }}</div>
+    {% if it.sub %}<div class="podium__sub muted">{{ it.sub }}</div>{% endif %}
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}
+
 {% macro grades(g) %}<span class="grades"
   ><span class="gr gr-X"  title="SS">SS<b>{{ g.X }}</b></span
   ><span class="gr gr-XH" title="Silver SS">SSH<b>{{ g.XH }}</b></span
@@ -12,25 +36,27 @@
 
 {% macro score_card(s, show_player=True, show_beatmap=True, rank=None, weight=None) %}
 {% set medal = 'medal-gold' if rank == 1 else 'medal-silver' if rank == 2 else 'medal-bronze' if rank == 3 else '' %}
-<div class="card {{ medal }}">
-  <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
-    <span class="grade grade-{{ s.grade }}">{{ '#%d'|format(rank) if rank else s.grade }}</span>
-    <span class="map-line" style="flex:1;min-width:200px">
-      {% if show_player and s.user %}<a href="{{ url_for('web.user_detail', key=s.user_id) }}">{{ s.user.username }}</a> &middot; {% endif %}
+<div class="score {{ medal }}">
+  {% if rank %}<div class="score__rank">#{{ rank }}</div>{% endif %}
+  <div class="score__grade grade-{{ s.grade }}">{{ s.grade }}</div>
+  <div class="score__body">
+    <div class="score__title">
+      {% if show_player and s.user %}<a href="{{ url_for('web.user_detail', key=s.user_id) }}">{{ s.user.username }}</a>{% if show_beatmap and s.beatmap %} &middot; {% endif %}{% endif %}
       {% if show_beatmap and s.beatmap %}
         <a href="{{ url_for('web.beatmap_detail', beatmap_id=s.beatmap_id) }}">{{ s.beatmap.artist }} - {{ s.beatmap.title }}</a>
         <span class="muted">[{{ s.beatmap.difficulty_name }}]</span>
-      {% else %}
+      {% elif not show_beatmap %}{% else %}
         <a href="https://osu.ppy.sh/scores/{{ s.id }}">score #{{ s.id }}</a>
       {% endif %}
-    </span>
-    {{ mods(s.mods) }}
-    <span class="acc">{{ s.accuracy|acc }}%</span>
-    <span class="pp" style="width:90px">{{ s.pp|pp }}pp{% if weight %} <span class="muted" style="font-size:0.8rem">{{ (weight*100)|round(0)|int }}%</span>{% endif %}</span>
+    </div>
+    <div class="score__meta">
+      {{ mods(s.mods) }}
+      <span class="muted">{{ s.combo }}x &middot;
+        {{ s.count_great }}/{{ s.count_large_droplet }}/{{ s.count_small_droplet }}/{{ s.count_miss }}m
+        {% if s.date %}&middot; {{ s.date.strftime('%Y-%m-%d') }}{% endif %}</span>
+    </div>
   </div>
-  <div class="sub">
-    {{ s.combo }}x &middot; {{ s.count_great }}/{{ s.count_large_droplet }}/{{ s.count_small_droplet }}/{{ s.count_miss }}m
-    &middot; {{ s.date.strftime('%Y-%m-%d') if s.date }}
-  </div>
+  <div class="score__acc">{{ s.accuracy|acc }}%</div>
+  <div class="score__pp"><b>{{ s.pp|pp }}</b>pp{% if weight %}<span class="score__weight">{{ (weight * 100)|round(0)|int }}%</span>{% endif %}</div>
 </div>
 {% endmacro %}

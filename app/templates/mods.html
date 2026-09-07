@@ -1,15 +1,15 @@
 {% extends "base.html" %}
+{% import "_macros.html" as m %}
 {% block winpath %}MODS{% endblock %}
 {% block content %}
-  <h2>Mod leaderboards</h2>
-  <p class="muted">Pick a mod combination. RX is on every score, so it isn't shown.
-     Nothing selected = nomod.</p>
+  {{ m.page_header('Mods', "Pick a mod combination. RX is on every score, so it isn't shown — nothing selected means nomod.") }}
 
   <div class="toolbar" id="toggles">
     {% for mod in toggle_mods %}
       <button class="btn mod-toggle" data-mod="{{ mod }}">{{ mod }}</button>
     {% endfor %}
     <button class="btn" id="clear">clear</button>
+    <label class="checkopt"><input type="checkbox" id="unranked"> include unranked maps</label>
   </div>
 
   {% if combos %}
@@ -22,9 +22,10 @@
   {% endif %}
 
   <h3 id="heading">nomod</h3>
-  <table class="info">
-    <thead><tr><th class="rank">#</th><th>Player</th><th class="acc">Accuracy</th><th class="acc">Plays</th><th class="pp">PP</th></tr></thead>
-    <tbody id="rows"><tr><td colspan="5" class="muted">Loading&hellip;</td></tr></tbody>
+  <div id="podium"></div>
+  <table class="info ranking">
+    <thead><tr><th class="rank">#</th><th>Player</th><th class="acc">Accuracy</th><th class="acc">Plays</th><th class="sc">Score</th><th class="pp">PP</th></tr></thead>
+    <tbody id="rows"><tr><td colspan="6" class="muted">Loading&hellip;</td></tr></tbody>
   </table>
 
 <script>
@@ -32,7 +33,8 @@ const TOGGLE = Array.from(document.querySelectorAll('.mod-toggle'));
 const rows = document.getElementById('rows');
 let selected = new Set({{ preselect | tojson }});
 
-function combo(){ return [...selected].sort().join('') || 'NM'; }
+const MOD_ORDER = ['EZ','HD','HR','DT','NC','HT','DC','FL','MR'];
+function combo(){ return [...selected].sort((a,b) => MOD_ORDER.indexOf(a) - MOD_ORDER.indexOf(b)).join('') || 'NM'; }
 function flag(cc){ return cc && cc !== 'XX' ? `<img src="https://flagcdn.com/20x15/${cc.toLowerCase()}.png" width="20" height="15" style="vertical-align:middle"> ` : ''; }
 
 function syncButtons(){
@@ -45,16 +47,32 @@ function syncButtons(){
 async function load(){
   syncButtons();
   rows.innerHTML = '<tr><td colspan="5" class="muted">Loading&hellip;</td></tr>';
-  const data = await (await fetch('{{ request.script_root }}/api/mod-leaderboard/' + combo())).json();
-  if (!data.length){ rows.innerHTML = '<tr><td colspan="5" class="muted">No scores with this combo yet.</td></tr>'; return; }
+  const qs = document.getElementById('unranked').checked ? '?includeUnranked=1' : '';
+  const data = await (await fetch('{{ request.script_root }}/api/mod-leaderboard/' + combo() + qs)).json();
+  const pod = document.getElementById('podium');
+  if (!data.length){
+    rows.innerHTML = '<tr><td colspan="6" class="muted">No scores with this combo yet.</td></tr>';
+    pod.innerHTML = ''; return;
+  }
   rows.innerHTML = data.map((r, i) => `
     <tr>
       <td class="rank">#${i + 1}</td>
       <td>${r.user ? flag(r.user.countryCode) + `<a href="{{ request.script_root }}/users/${r.userId}">${r.user.username}</a>` : '?'}</td>
       <td class="acc">${r.accuracy === null ? '-' : r.accuracy.toFixed(2)}%</td>
       <td class="acc">${r.plays}</td>
+      <td class="sc">${(r.score || 0).toLocaleString()}</td>
       <td class="pp">${r.pp.toFixed(0)}</td>
     </tr>`).join('');
+
+  renderPodium(pod, data.slice(0, 3).map((r, i) => ({
+    rank: i + 1,
+    name: r.user ? r.user.username : '?',
+    href: r.user ? '{{ request.script_root }}/users/' + r.userId : null,
+    avatar: 'https://a.ppy.sh/' + r.userId,
+    flagHtml: r.user ? podiumFlag(r.user.countryCode) : '',
+    value: r.pp.toFixed(0) + 'pp',
+    sub: (r.score || 0).toLocaleString(),
+  })));
 }
 
 TOGGLE.forEach(b => b.onclick = () => {
@@ -63,6 +81,7 @@ TOGGLE.forEach(b => b.onclick = () => {
   load();
 });
 document.getElementById('clear').onclick = () => { selected.clear(); load(); };
+document.getElementById('unranked').onchange = load;
 document.querySelectorAll('#quick button').forEach(b => b.onclick = () => {
   selected = new Set(b.dataset.combo === 'NM' ? [] : b.dataset.combo.match(/.{2}/g));
   load();

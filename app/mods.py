@@ -30,7 +30,7 @@ def mod_to_string(mod: dict) -> str:
     return acronym
 
 
-IGNORED_LEADERBOARD_MODS = {"MR", "PF", "SD", "DA"}
+IGNORED_LEADERBOARD_MODS = {"MR", "PF", "SD", "DA", "NF"}
 
 def mods_to_strings(api_mods: list[dict]) -> list[str]:
     return [mod_to_string(m) for m in api_mods if m.get("acronym") not in IGNORED_LEADERBOARD_MODS]

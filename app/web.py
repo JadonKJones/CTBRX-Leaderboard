@@ -36,7 +36,7 @@ api_bp = Blueprint("api", __name__, url_prefix="/api")
 
 PAGE = 50
 BEATMAP_PAGE = 30
-TOGGLE_MODS = ["EZ", "HD", "HR", "DT", "NC", "HT", "DC", "FL", "MR"]
+TOGGLE_MODS = ["EZ", "HD", "HR", "DT", "HT", "FL", "MR"]
 
 
 # --------------------------------------------------------------------------- #

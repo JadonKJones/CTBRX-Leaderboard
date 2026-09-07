@@ -13,7 +13,7 @@ from .pipeline import PP_STATUSES, RANKED_STATUSES, WEIGHT, _weighted_totals
 
 
 # canonical display order for mod acronyms (rate mods DT/NC/HT/DC sit late, FL last-ish)
-MOD_ORDER = ["EZ", "HD", "HR", "DT", "NC", "HT", "DC", "FL", "MR", "NF", "SD", "PF", "CL", "AC"]
+MOD_ORDER = ["EZ", "HD", "HR", "DT", "HT", "FL", "MR", "NF", "SD", "PF", "CL", "AC"]
 
 
 def mod_combo(mods: list[str] | None) -> str:

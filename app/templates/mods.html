@@ -2,7 +2,7 @@
 {% import "_macros.html" as m %}
 {% block winpath %}MODS{% endblock %}
 {% block content %}
-  {{ m.page_header('Mods', "Pick a mod combination. RX is on every score, so it isn't shown — nothing selected means nomod.") }}
+  {{ m.page_header('Mods') }}
 
   <div class="toolbar" id="toggles">
     {% for mod in toggle_mods %}
@@ -33,7 +33,7 @@ const TOGGLE = Array.from(document.querySelectorAll('.mod-toggle'));
 const rows = document.getElementById('rows');
 let selected = new Set({{ preselect | tojson }});
 
-const MOD_ORDER = ['EZ','HD','HR','DT','NC','HT','DC','FL','MR'];
+const MOD_ORDER = ['EZ','HD','HR','DT','HT','DC','FL','MR'];
 function combo(){ return [...selected].sort((a,b) => MOD_ORDER.indexOf(a) - MOD_ORDER.indexOf(b)).join('') || 'NM'; }
 function flag(cc){ return cc && cc !== 'XX' ? `<img src="https://flagcdn.com/20x15/${cc.toLowerCase()}.png" width="20" height="15" style="vertical-align:middle"> ` : ''; }
 
@@ -41,7 +41,8 @@ function syncButtons(){
   TOGGLE.forEach(b => b.classList.toggle('active', selected.has(b.dataset.mod)));
   document.getElementById('heading').textContent = selected.size ? combo() : 'nomod';
   const u = combo();
-  history.replaceState(null, '', u === 'NM' ? '/mods' : '/mods/' + u);
+  const root = '{{ request.script_root }}';
+  history.replaceState(null, '', root + '/mods' + (u === 'NM' ? '' : '/' + u));
 }
 
 async function load(){

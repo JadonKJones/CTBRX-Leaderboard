@@ -35,6 +35,7 @@
   }
 
   function wire(table) {
+    if (table.classList.contains("server-sort")) return;
     const head = table.tHead;
     if (!head || !head.rows.length) return;
     const ths = [...head.rows[head.rows.length - 1].cells];

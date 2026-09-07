@@ -88,6 +88,103 @@ def mod_leaderboard(combo: str, limit: int = 100, include_unranked: bool = False
         r["user"] = users.get(r["user_id"])
     return rows
 
+import time
+
+_mod_champs_cache = None
+_mod_champs_time = 0
+
+def get_mod_champions() -> dict[int, list[tuple[str, int]]]:
+    """Returns a dict mapping user_id to a list of (mod combo, rank) they are top 3 in."""
+    global _mod_champs_cache, _mod_champs_time
+    if _mod_champs_cache is not None and time.time() - _mod_champs_time < 300:
+        return _mod_champs_cache
+
+    from .pipeline import SCAN_MOD_COMBOS
+    champs = {}
+    for mods in SCAN_MOD_COMBOS:
+        if not mods: continue
+        combo_str = "".join(mods)
+        board = mod_leaderboard(combo_str, limit=3, include_unranked=False)
+        for i, entry in enumerate(board):
+            if entry.get("user_id"):
+                uid = entry["user_id"]
+                if uid not in champs: champs[uid] = []
+                champs[uid].append((combo_str, i + 1))
+    
+    _mod_champs_cache = champs
+    _mod_champs_time = time.time()
+    return champs
+
+_acc_champs_cache = None
+_acc_champs_time = 0
+
+def get_acc_champions() -> dict[int, int]:
+    global _acc_champs_cache, _acc_champs_time
+    if _acc_champs_cache is not None and time.time() - _acc_champs_time < 300:
+        return _acc_champs_cache
+    from sqlalchemy import func
+    valid = (
+        db.session.query(Score.user_id)
+        .filter(Score.is_best.is_(True), Score.hidden.is_(False))
+        .group_by(Score.user_id)
+        .having(func.count(Score.id) >= 10)
+        .subquery()
+    )
+    top = (
+        db.session.query(User)
+        .filter(User.total_accuracy.isnot(None), User.id.in_(valid))
+        .order_by(User.total_accuracy.desc(), User.total_pp.desc())
+        .limit(100)
+        .all()
+    )
+    
+    champs = {}
+    current_rank = 1
+    last_acc = None
+    
+    for u in top:
+        acc = round(u.total_accuracy or 0, 2)
+        if acc == 100.0:
+            champs[u.id] = 1
+            last_acc = 100.0
+        else:
+            if current_rank == 1 and last_acc == 100.0:
+                current_rank = 2
+            
+            if last_acc is not None and acc < last_acc:
+                current_rank += 1
+                
+            if current_rank > 3:
+                break
+                
+            champs[u.id] = current_rank
+            last_acc = acc
+            
+    _acc_champs_cache = champs
+    _acc_champs_time = time.time()
+    return champs
+
+_score_champs_cache = None
+_score_champs_time = 0
+
+def get_score_champions() -> dict[int, int]:
+    global _score_champs_cache, _score_champs_time
+    if _score_champs_cache is not None and time.time() - _score_champs_time < 300:
+        return _score_champs_cache
+    from sqlalchemy import func
+    top = (
+        db.session.query(Score.user_id)
+        .filter(Score.is_best.is_(True), Score.hidden.is_(False))
+        .group_by(Score.user_id)
+        .order_by(func.sum(Score.total_score).desc())
+        .limit(3)
+        .all()
+    )
+    champs = {r[0]: i + 1 for i, r in enumerate(top)}
+    _score_champs_cache = champs
+    _score_champs_time = time.time()
+    return champs
+
 
 def country_leaderboard(include_unranked: bool = False) -> list[dict]:
     from sqlalchemy import func

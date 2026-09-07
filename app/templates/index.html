@@ -4,17 +4,67 @@
 {% block content %}
   <div style="text-align:center">
     <h1>{{ SITE_NAME }}</h1>
-    <p>Leaderboard of osu!lazer <b>osu!catch</b> scores set with the <b>Relax</b> mod.<br>
-       Scores submit automatically from the global score feed, usually within a couple of minutes.</p>
+    <p>Leaderboard of osu!lazer <b>osu!catch</b> scores set with the <b>Relax</b> mod.<br></p>
   </div>
   <hr class="hr-rainbow">
 
   <div class="statgrid">
-    <div class="card">Players <span class="big">{{ stats.players }}</span></div>
-    <div class="card">Scores <span class="big">{{ stats.scores }}</span></div>
-    <div class="card">Beatmaps <span class="big">{{ stats.beatmaps }}</span></div>
-    <div class="card">Scores today <span class="big">{{ stats.scores_today }}</span></div>
+    <div class="card" id="card-players">
+      Players <span class="big">{{ stats.players }}</span>
+      <div class="spark-container"><canvas id="spark-players"></canvas></div>
+    </div>
+    <div class="card" id="card-scores">
+      Scores <span class="big">{{ stats.scores }}</span>
+      <div class="spark-container"><canvas id="spark-scores"></canvas></div>
+    </div>
+    <div class="card" id="card-beatmaps">
+      Beatmaps <span class="big">{{ stats.beatmaps }}</span>
+      <div class="spark-container"><canvas id="spark-beatmaps"></canvas></div>
+    </div>
+    <div class="card" id="card-scores-today">
+      Scores today <span class="big">{{ stats.scores_today }}</span>
+      <div class="spark-container"><canvas id="spark-scores-today"></canvas></div>
+    </div>
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const series = {{ stats.series | tojson }};
+    const numDays = {{ stats.days }};
+    
+    // Generate dates for the all-time charts
+    const days = Array.from({length: numDays}, (_, i) => i).reverse().map(i => {
+      const d = new Date(); d.setDate(d.getDate() - i); return d.toISOString().split('T')[0];
+    });
+    
+    // Generate hours for the 24h chart
+    const hours = Array.from({length: 24}, (_, i) => i).reverse().map(i => {
+      const d = new Date(); d.setHours(d.getHours() - i); return d.toISOString().split('T')[1].split(':')[0] + ':00';
+    });
+    
+    function drawSpark(id, data, labels, color) {
+      const ctx = document.getElementById(id);
+      if (!ctx) return;
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{ data: data, borderColor: color, borderWidth: 2, tension: 0.3, pointRadius: 0, pointHoverRadius: 4 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { intersect: false } },
+          scales: { x: { display: false }, y: { display: false } },
+          layout: { padding: 5 }
+        }
+      });
+    }
+
+    drawSpark('spark-players', series.players, days, '#008080');
+    drawSpark('spark-scores', series.scores, days, '#800080');
+    drawSpark('spark-beatmaps', series.beatmaps, days, '#000080');
+    drawSpark('spark-scores-today', series.scores_today, hours, '#800080');
+  </script>
 
   <div class="home-cols">
     <div class="home-main">

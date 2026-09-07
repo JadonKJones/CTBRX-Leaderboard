@@ -190,8 +190,10 @@ def process_scores(api, scores: list[dict], cache_path: str) -> list[int]:
 # mod combos to pull per beatmap leaderboard (RX always added). Exotic combos
 # still arrive via the firehose.
 SCAN_MOD_COMBOS = (
-    [], ["HD"], ["HR"], ["DT"], ["EZ"], ["FL"],
-    ["HD", "DT"], ["HD", "HR"], ["EZ", "HD"], ["EZ", "HD", "DT"],
+    [], ["HD"], ["HR"], ["DT"], ["EZ"], ["FL"], ["HT"],
+    ["HD", "DT"], ["HD", "HR"], ["EZ", "HD"], ["EZ", "DT"], 
+    ["HR", "DT"], ["EZ", "HD", "DT"],
+    ["HT", "HD"], ["HT", "HR"], ["EZ", "HT"],
 )
 
 
@@ -247,15 +249,29 @@ def firehose_tick(app, api) -> int:
             channel_id = os.environ.get("DISCORD_CHANNEL_ID")
             if bot_token and channel_id and new_score_ids:
                 new_bests = db.session.query(Score).filter(Score.id.in_(new_score_ids), Score.is_best.is_(True)).all()
+                
+                best_global = db.session.query(Score.id).filter(Score.hidden.is_(False), Score.pp.isnot(None)).order_by(Score.pp.desc()).first()
+                best_global_id = best_global.id if best_global else None
+                
                 for best in new_bests:
                     if best.pp and best.pp > 0:
+                        best_map = db.session.query(Score.id).filter(Score.beatmap_id == best.beatmap_id, Score.hidden.is_(False)).order_by(Score.pp.desc().nulls_last(), Score.total_score.desc()).first()
+                        is_beatmap_1 = best_map and best_map.id == best.id
+                        is_global_1 = best.id == best_global_id
+                        
+                        if not is_beatmap_1 and not is_global_1:
+                            continue
+
+                        content = "@here" if is_global_1 else ""
+                        title_text = "New Server PP Record!" if is_global_1 else "New Beatmap #1!"
+
                         try:
                             import requests
                             user = db.session.get(User, best.user_id)
                             beatmap = db.session.get(Beatmap, best.beatmap_id)
                             embed = {
-                                "title": f"New Top Play by {user.username}!",
-                                "description": f"**{user.username}** just set a new #1 score on **{beatmap.title} [{beatmap.version}]**!\n\n**Accuracy:** {best.accuracy:.2f}%\n**PP:** {best.pp:.0f}pp",
+                                "title": title_text,
+                                "description": f"**{user.username}** just set a new #1 score on **{beatmap.title} [{beatmap.difficulty_name}]**!\n\n**Accuracy:** {best.accuracy * 100:.2f}%\n**PP:** {best.pp:.0f}pp",
                                 "color": 15844367, # Gold
                                 "thumbnail": {
                                     "url": f"https://a.ppy.sh/{user.id}"
@@ -265,7 +281,7 @@ def firehose_tick(app, api) -> int:
                             requests.post(
                                 f"https://discord.com/api/v10/channels/{channel_id}/messages",
                                 headers={"Authorization": f"Bot {bot_token}"},
-                                json={"embeds": [embed]},
+                                json={"content": content, "embeds": [embed]},
                                 timeout=5
                             )
                         except Exception as e:

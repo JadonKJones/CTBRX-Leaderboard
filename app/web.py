@@ -57,6 +57,14 @@ def _num(value):
     return "-" if value is None else f"{value:,}"
 
 
+@bp.app_context_processor
+def inject_champs():
+    from .leaderboards import get_mod_champions, get_acc_champions, get_score_champions
+    return {
+        "mod_champs": get_mod_champions(),
+        "acc_champs": get_acc_champions(),
+        "score_champs": get_score_champions(),
+    }
 # --------------------------------------------------------------------------- #
 #  helpers
 # --------------------------------------------------------------------------- #
@@ -83,6 +91,7 @@ def _user_json(u: User) -> dict:
         "countryCode": u.country_code,
         "totalPp": u.total_pp,
         "totalAccuracy": u.total_accuracy,
+        "hasDiscord": bool(u.discord_link),
     }
 
 
@@ -92,11 +101,71 @@ def _user_json(u: User) -> dict:
 @bp.route("/")
 def index():
     day_ago = datetime.now(timezone.utc) - timedelta(days=1)
+    
+    first_score = db.session.query(func.min(Score.date)).scalar()
+    if first_score:
+        if first_score.tzinfo is None:
+            first_score = first_score.replace(tzinfo=timezone.utc)
+        days = (datetime.now(timezone.utc) - first_score).days + 1
+    else:
+        days = 30
+    days = max(30, days)
+    
+    start_date = datetime.now(timezone.utc) - timedelta(days=days)
+    
+    def make_cumulative_series(counts, base_total):
+        # Initialize with 0s
+        daily = {str((datetime.now(timezone.utc) - timedelta(days=i)).date()): 0 for i in range(days-1, -1, -1)}
+        for row in counts:
+            if row.d in daily:
+                daily[row.d] = row.c
+        
+        # Accumulate
+        series = []
+        current = base_total
+        for val in daily.values():
+            current += val
+            series.append(current)
+        return series
+
+    # Scores
+    scores_base = db.session.query(Score).filter(Score.date <= start_date).count()
+    scores_counts = db.session.query(func.date(Score.date).label('d'), func.count().label('c')).filter(Score.date > start_date).group_by('d').all()
+    
+    # Users
+    first_user_plays = db.session.query(func.min(Score.date).label('min_date')).group_by(Score.user_id).subquery()
+    users_base = db.session.query(first_user_plays).filter(first_user_plays.c.min_date <= start_date).count()
+    users_counts = db.session.query(func.date(first_user_plays.c.min_date).label('d'), func.count().label('c')).filter(first_user_plays.c.min_date > start_date).group_by('d').all()
+    
+    # Beatmaps
+    first_plays = db.session.query(func.min(Score.date).label('min_date')).group_by(Score.beatmap_id).subquery()
+    maps_base = db.session.query(first_plays).filter(first_plays.c.min_date <= start_date).count()
+    maps_counts = db.session.query(func.date(first_plays.c.min_date).label('d'), func.count().label('c')).filter(first_plays.c.min_date > start_date).group_by('d').all()
+
+    # 24 hour rolling for scores today
+    start_hour = datetime.now(timezone.utc) - timedelta(hours=24)
+    scores_24h_counts = db.session.query(func.strftime('%Y-%m-%d %H', Score.date).label('h'), func.count().label('c')).filter(Score.date > start_hour).group_by('h').all()
+    hourly = {}
+    for i in range(23, -1, -1):
+        dt = datetime.now(timezone.utc) - timedelta(hours=i)
+        hourly[dt.strftime('%Y-%m-%d %H')] = 0
+    for row in scores_24h_counts:
+        if row.h in hourly:
+            hourly[row.h] = row.c
+    scores_today_series = list(hourly.values())
+
     stats = {
         "scores_today": db.session.query(Score).filter(Score.date > day_ago).count(),
         "scores": db.session.query(Score).count(),
         "players": db.session.query(User).filter(User.total_pp.isnot(None)).count(),
         "beatmaps": db.session.query(Beatmap).count(),
+        "series": {
+            "scores": make_cumulative_series(scores_counts, scores_base),
+            "players": make_cumulative_series(users_counts, users_base),
+            "beatmaps": make_cumulative_series(maps_counts, maps_base),
+            "scores_today": scores_today_series
+        },
+        "days": days
     }
     return render_template(
         "index.html",
@@ -278,6 +347,8 @@ def api_players():
     country = request.args.get("countryCode")
     search = request.args.get("search")
     include_unranked = request.args.get("includeUnranked") in ("1", "true")
+    sort = request.args.get("sort", "pp")
+
     pp_col = User.total_pp_all if include_unranked else User.total_pp
     acc_col = User.total_accuracy_all if include_unranked else User.total_accuracy
 
@@ -287,26 +358,44 @@ def api_players():
         .group_by(Score.user_id)
         .subquery()
     )
-    higher = aliased(User)
-    global_rank = (
-        db.session.query(func.count(higher.id))
-        .filter(getattr(higher, pp_col.key) > pp_col)
-        .correlate(User)
-        .scalar_subquery()
-    )
+
     q = (
-        db.session.query(User, score_sum.c.sc, (global_rank + 1).label("rk"))
+        db.session.query(User, score_sum.c.sc)
         .outerjoin(score_sum, score_sum.c.user_id == User.id)
         .filter(pp_col.isnot(None))
     )
+
+    # Fetch all to do in-memory ranking (fast enough for our scale)
+    all_users = q.all()
+    
+    # Sort
+    if sort == "acc":
+        all_users.sort(key=lambda row: (round(getattr(row[0], acc_col.key) or 0, 2), getattr(row[0], pp_col.key) or 0), reverse=True)
+    elif sort == "score":
+        all_users.sort(key=lambda row: (row.sc or 0, getattr(row[0], pp_col.key) or 0), reverse=True)
+    else:
+        all_users.sort(key=lambda row: (getattr(row[0], pp_col.key) or 0), reverse=True)
+
+    # Compute ranks
+    ranked_users = []
+    for i, row in enumerate(all_users):
+        ranked_users.append((row[0], row.sc, i + 1))
+
+    # Filter
     if country:
-        q = q.filter(User.country_code == country)
+        ranked_users = [r for r in ranked_users if r[0].country_code == country]
+    
     if search:
-        q = q.filter(User.id == int(search)) if search.isdigit() else q.filter(
-            User.username.ilike(f"%{search}%")
-        )
-    total = q.count()
-    rows = q.order_by(pp_col.desc()).offset((page - 1) * PAGE).limit(PAGE).all()
+        if search.isdigit():
+            ranked_users = [r for r in ranked_users if r[0].id == int(search)]
+        else:
+            s_lower = search.lower()
+            ranked_users = [r for r in ranked_users if s_lower in r[0].username.lower()]
+
+    total = len(ranked_users)
+    start = (page - 1) * PAGE
+    rows = ranked_users[start:start + PAGE]
+
     players = []
     for u, sc, rk in rows:
         d = _user_json(u)

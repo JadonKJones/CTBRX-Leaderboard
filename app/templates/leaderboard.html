@@ -2,7 +2,7 @@
 {% import "_macros.html" as m %}
 {% block winpath %}LEADERBOARD{% endblock %}
 {% block content %}
-  {{ m.page_header('Ranking', 'Players ranked by weighted Relax osu!catch pp.') }}
+  {{ m.page_header('Ranking') }}
 
   <div class="toolbar">
     <div class="cpick" id="cpick">
@@ -20,8 +20,8 @@
 
   <div id="podium"></div>
 
-  <table class="info ranking">
-    <thead><tr><th class="rank">#</th><th>Player</th><th class="acc">Accuracy</th><th class="sc">Score</th><th class="pp">PP</th></tr></thead>
+  <table class="info ranking server-sort">
+    <thead><tr><th class="rank">#</th><th>Player</th><th class="acc" data-sort="acc" style="cursor:pointer">Accuracy</th><th class="sc" data-sort="score" style="cursor:pointer">Score</th><th class="pp" data-sort="pp" style="cursor:pointer">PP</th></tr></thead>
     <tbody id="rows"><tr><td colspan="5" class="muted">Loading&hellip;</td></tr></tbody>
   </table>
 
@@ -75,12 +75,15 @@ cp.list.onclick = e => {
 document.addEventListener('click', e => { if (!document.getElementById('cpick').contains(e.target)) cp.pop.hidden = true; });
 cpLabel();
 
+let sortCol = 'pp';
+
 async function load(){
   rows.innerHTML = '<tr><td colspan="5" class="muted">Loading&hellip;</td></tr>';
   const p = new URLSearchParams({page});
   if (country) p.set('countryCode', country);
   if (search.value) p.set('search', search.value);
   if (unranked.checked) p.set('includeUnranked', '1');
+  if (sortCol !== 'pp') p.set('sort', sortCol);
   const data = await (await fetch(ROOT + '/api/players?' + p)).json();
 
   if (!data.players.length){ rows.innerHTML = '<tr><td colspan="5" class="muted">No players.</td></tr>'; }
@@ -101,8 +104,10 @@ async function load(){
       href: ROOT + '/users/' + u.id,
       avatar: 'https://a.ppy.sh/' + u.id,
       flagHtml: podiumFlag(u.countryCode),
-      value: (u.totalPp === null ? '-' : u.totalPp.toFixed(0)) + 'pp',
-      sub: (u.totalScore || 0).toLocaleString(),
+      value: sortCol === 'acc' ? (u.totalAccuracy === null ? '-' : u.totalAccuracy.toFixed(2)) + '%' :
+             sortCol === 'score' ? (u.totalScore || 0).toLocaleString() :
+             (u.totalPp === null ? '-' : u.totalPp.toFixed(0)) + 'pp',
+      sub: sortCol === 'score' ? (u.totalPp === null ? '-' : u.totalPp.toFixed(0)) + 'pp' : (u.totalScore || 0).toLocaleString(),
     })));
   } else { pod.innerHTML = ''; }
 
@@ -121,6 +126,24 @@ document.getElementById('prev').onclick = () => { if (page > 1){ page--; load();
 document.getElementById('next').onclick = () => { page++; load(); };
 let t; search.oninput = () => { clearTimeout(t); t = setTimeout(() => { page = 1; load(); }, 400); };
 unranked.onchange = () => { page = 1; load(); };
+
+// Handle server-side sorting clicks
+document.querySelectorAll('th[data-sort]').forEach(th => {
+  th.onclick = (e) => {
+    e.stopPropagation(); // prevent sort.js if it fires
+    document.querySelectorAll('th[data-sort]').forEach(t => {
+      t.classList.remove('sort-asc', 'sort-desc');
+    });
+    th.classList.add('sort-desc'); // descending only for leaderboard
+    sortCol = th.dataset.sort;
+    page = 1;
+    load();
+  };
+});
+// Highlight initial default
+const defaultTh = document.querySelector('th[data-sort="pp"]');
+if (defaultTh) defaultTh.classList.add('sort-desc');
+
 load();
 </script>
 {% endblock %}

@@ -41,7 +41,11 @@
   <div class="score__grade grade-{{ s.grade }}">{{ s.grade }}</div>
   <div class="score__body">
     <div class="score__title">
-      {% if show_player and s.user %}<a href="{{ url_for('web.user_detail', key=s.user_id) }}">{{ s.user.username }}</a>{% if show_beatmap and s.beatmap %} &middot; {% endif %}{% endif %}
+      {% if show_player and s.user %}
+      <span class="score__player">
+        {{ flag(s.user.country_code) }}<a href="{{ url_for('web.user_detail', key=s.user_id) }}">{{ s.user.username }}</a>
+      </span>
+      {% if show_beatmap and s.beatmap %} &middot; {% endif %}{% endif %}
       {% if show_beatmap and s.beatmap %}
         <a href="{{ url_for('web.beatmap_detail', beatmap_id=s.beatmap_id) }}">{{ s.beatmap.artist }} - {{ s.beatmap.title }}</a>
         <span class="muted">[{{ s.beatmap.difficulty_name }}]</span>

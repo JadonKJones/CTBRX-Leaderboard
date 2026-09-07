@@ -4,11 +4,14 @@
 # this set is ignored entirely (not stored).
 ALLOWED_MODS = {
     "HD", "DT", "NC", "HT", "DC", "HR", "EZ", "FL",
-    "MR", "NF", "SD", "PF", "CL", "AC", "RX",
+    "MR", "NF", "SD", "PF", "CL", "AC", "RX", "DA"
 }
 
 # Mod settings we tolerate. Anything else -> score ignored.
-ALLOWED_MOD_SETTINGS = {"speed_change", "adjust_pitch"}
+ALLOWED_MOD_SETTINGS = {
+    "speed_change", "adjust_pitch", 
+    "circle_size", "approach_rate", "overall_difficulty", "drain_rate", "extended_limits"
+}
 
 _RATE_KEY = "speed_change"
 
@@ -16,14 +19,21 @@ _RATE_KEY = "speed_change"
 def mod_to_string(mod: dict) -> str:
     """{'acronym': 'DT', 'settings': {'speed_change': 1.3}} -> 'DTx1.3'."""
     acronym = mod.get("acronym", "")
+    if acronym == "NC":
+        acronym = "DT"
+    elif acronym == "DC":
+        acronym = "HT"
+        
     settings = mod.get("settings") or {}
     if _RATE_KEY in settings:
         return f"{acronym}x{settings[_RATE_KEY]}"
     return acronym
 
 
+IGNORED_LEADERBOARD_MODS = {"MR", "PF", "SD", "DA"}
+
 def mods_to_strings(api_mods: list[dict]) -> list[str]:
-    return [mod_to_string(m) for m in api_mods]
+    return [mod_to_string(m) for m in api_mods if m.get("acronym") not in IGNORED_LEADERBOARD_MODS]
 
 
 def is_allowed(api_mods: list[dict]) -> bool:

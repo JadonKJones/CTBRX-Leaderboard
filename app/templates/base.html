@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ SITE_NAME }}{% block title %}{% endblock %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script defer src="{{ url_for('static', filename='sort.js') }}"></script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <div class="page">
+    <div class="titlebar">
+      <span>C:\{{ SITE_NAME }}\{% block winpath %}INDEX{% endblock %}.HTML</span>
+      <span class="btns"><span>_</span><span>□</span><span>x</span></span>
+    </div>
+    <div class="menubar">
+      <a href="{{ url_for('web.index') }}" class="{{ 'active' if request.endpoint == 'web.index' }}">Home</a>
+      <a href="{{ url_for('web.leaderboard') }}" class="{{ 'active' if request.endpoint == 'web.leaderboard' }}">Leaderboard</a>
+      <a href="{{ url_for('web.countries_board') }}" class="{{ 'active' if request.endpoint == 'web.countries_board' }}">Countries</a>
+      <a href="{{ url_for('web.mods_index') }}" class="{{ 'active' if request.endpoint in ('web.mods_index', 'web.mod_board') }}">Mods</a>
+      <a href="{{ url_for('web.topscores') }}" class="{{ 'active' if request.endpoint == 'web.topscores' }}">Top Scores</a>
+      <a href="{{ url_for('web.beatmaps') }}" class="{{ 'active' if request.endpoint in ('web.beatmaps', 'web.beatmap_detail') }}">Beatmaps</a>
+      <a href="{{ url_for('web.faq') }}" class="{{ 'active' if request.endpoint == 'web.faq' }}">FAQ</a>
+    </div>
+    <div class="content">
+      {% block content %}{% endblock %}
+    </div>
+    <footer class="page-footer">
+      {{ SITE_NAME }} &mdash; an osu!catch Relax leaderboard &middot;
+      inspired by <a href="https://rx.stanr.info/">Relaxation Vault</a>
+      {% if DISCORD_URL %}&middot; <a href="{{ DISCORD_URL }}">Discord</a>{% endif %}
+      <br><span class="muted">pp recomputed locally &mdash; not affiliated with osu!</span>
+    </footer>
+  </div>
+</body>
+</html>

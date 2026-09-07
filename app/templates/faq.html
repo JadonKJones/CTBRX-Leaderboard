@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block winpath %}FAQ{% endblock %}
+{% block content %}
+  <h2>FAQ</h2>
+
+  <h3>How do I submit a score?</h3>
+  <p>You don't. {{ SITE_NAME }} reads the global osu!lazer score feed and automatically keeps every
+     <b>osu!catch</b> score that used the <b>Relax</b> mod. New scores usually appear within a couple of minutes.</p>
+
+  <h3>Why isn't my score here?</h3>
+  <p>Only certain mods are allowed. If a score used anything outside this list it is ignored:</p>
+  <p>Allowed mods: <span class="muted">{{ allowed_mods | join(', ') }}</span><br>
+     Allowed mod settings: <span class="muted">{{ allowed_mod_settings | join(', ') }}</span></p>
+  <p>Loved / unranked maps are tracked but their scores don't get pp.</p>
+
+  <h3>Where do the pp values come from?</h3>
+  <p>There is no official Relax pp for osu!catch, so &mdash; exactly like
+     <a href="https://rx.stanr.info/">Relaxation Vault</a> does for osu!standard &mdash; {{ SITE_NAME }}
+     computes the normal osu!catch pp for the Relax score, using
+     <a href="https://github.com/MaxOhn/rosu-pp-py">rosu-pp</a>.
+     Current version: <span class="muted">{{ pp_version }}</span>.
+     Player totals use the standard <code>&Sigma; pp &times; 0.95<sup>n</sup></code> weighting.</p>
+
+  <h3>Something else?</h3>
+  {% if DISCORD_URL %}<p>Ask in the <a href="{{ DISCORD_URL }}">Discord server</a>.</p>
+  {% else %}<p>Open an issue on the project repository.</p>{% endif %}
+{% endblock %}

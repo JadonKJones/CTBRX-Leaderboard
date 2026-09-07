@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block winpath %}COUNTRIES{% endblock %}
+{% block content %}
+  <h2>Country leaderboard</h2>
+  <p class="muted">Weighted sum of each country's players' pp.</p>
+  <table class="info">
+    <thead><tr><th class="rank">#</th><th>Country</th><th class="acc">Players</th><th>Top player</th><th class="pp">PP</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td class="rank">#{{ loop.index }}</td>
+        <td><a href="{{ url_for('web.leaderboard', country=r.country) }}">{{ m.flag(r.country) }} {{ r.country }}</a></td>
+        <td class="acc">{{ r.players }}</td>
+        <td>{% if r.top %}<a href="{{ url_for('web.user_detail', key=r.top.id) }}">{{ r.top.username }}</a>{% endif %}</td>
+        <td class="pp">{{ r.pp|round(0)|int }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No ranked players yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

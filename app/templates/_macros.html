@@ -1,0 +1,36 @@
+{% macro flag(cc) %}{% if cc and cc != 'XX' %}<img class="flag" src="https://flagcdn.com/24x18/{{ cc|lower }}.png" width="24" height="18" alt="{{ cc }}" title="{{ cc }}">{% endif %}{% endmacro %}
+
+{% macro grades(g) %}<span class="grades"
+  ><span class="gr gr-X"  title="SS">SS<b>{{ g.X }}</b></span
+  ><span class="gr gr-XH" title="Silver SS">SSH<b>{{ g.XH }}</b></span
+  ><span class="gr gr-S"  title="S">S<b>{{ g.S }}</b></span
+  ><span class="gr gr-SH" title="Silver S">SH<b>{{ g.SH }}</b></span
+  ><span class="gr gr-A"  title="A">A<b>{{ g.A }}</b></span
+></span>{% endmacro %}
+
+{% macro mods(ms) %}{% for m in ms %}<span class="mod">{{ m }}</span>{% endfor %}{% endmacro %}
+
+{% macro score_card(s, show_player=True, show_beatmap=True, rank=None, weight=None) %}
+{% set medal = 'medal-gold' if rank == 1 else 'medal-silver' if rank == 2 else 'medal-bronze' if rank == 3 else '' %}
+<div class="card {{ medal }}">
+  <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+    <span class="grade grade-{{ s.grade }}">{{ '#%d'|format(rank) if rank else s.grade }}</span>
+    <span class="map-line" style="flex:1;min-width:200px">
+      {% if show_player and s.user %}<a href="{{ url_for('web.user_detail', key=s.user_id) }}">{{ s.user.username }}</a> &middot; {% endif %}
+      {% if show_beatmap and s.beatmap %}
+        <a href="{{ url_for('web.beatmap_detail', beatmap_id=s.beatmap_id) }}">{{ s.beatmap.artist }} - {{ s.beatmap.title }}</a>
+        <span class="muted">[{{ s.beatmap.difficulty_name }}]</span>
+      {% else %}
+        <a href="https://osu.ppy.sh/scores/{{ s.id }}">score #{{ s.id }}</a>
+      {% endif %}
+    </span>
+    {{ mods(s.mods) }}
+    <span class="acc">{{ s.accuracy|acc }}%</span>
+    <span class="pp" style="width:90px">{{ s.pp|pp }}pp{% if weight %} <span class="muted" style="font-size:0.8rem">{{ (weight*100)|round(0)|int }}%</span>{% endif %}</span>
+  </div>
+  <div class="sub">
+    {{ s.combo }}x &middot; {{ s.count_great }}/{{ s.count_large_droplet }}/{{ s.count_small_droplet }}/{{ s.count_miss }}m
+    &middot; {{ s.date.strftime('%Y-%m-%d') if s.date }}
+  </div>
+</div>
+{% endmacro %}

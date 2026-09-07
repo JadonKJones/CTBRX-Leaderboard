@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block winpath %}USER{% endblock %}
+{% block title %} &mdash; {{ user.username }}{% endblock %}
+{% block head %}<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>{% endblock %}
+{% block content %}
+  <div class="profile-head">
+    <img class="avatar" src="https://a.ppy.sh/{{ user.id }}" alt="">
+    <div>
+      <div class="name">{{ m.flag(user.country_code) }}
+        <a href="https://osu.ppy.sh/users/{{ user.id }}/fruits">{{ user.username }}</a></div>
+      <div>{{ '%.0f'|format(user.total_pp) if user.total_pp else '-' }}pp
+        &middot; <span class="muted">{{ '%.2f'|format(user.total_accuracy) if user.total_accuracy is not none else '-' }}%</span></div>
+      <div class="muted">
+        Lv {{ profile.level }} ({{ profile.level_progress }}%)
+        {% if user.join_date %}&middot; joined {{ user.join_date.strftime('%b %Y') }}{% endif %}
+      </div>
+    </div>
+    <div class="big-rank">#{{ profile.rank or '-' }}
+      <div class="muted" style="font-size:0.9rem">{{ m.flag(user.country_code) }} #{{ profile.country_rank or '-' }}</div>
+    </div>
+  </div>
+
+  <hr class="hr-rainbow">
+
+  <table class="info">
+    <tbody>
+      <tr><td class="label">Peak rank</td><td>{% if profile.timelines.peak_rank %}#{{ profile.timelines.peak_rank.rank }}
+        <span class="muted">on {{ profile.timelines.peak_rank.date }}</span>{% else %}&mdash;{% endif %}</td></tr>
+      <tr><td class="label">Ranked score</td><td>{{ profile.ranked_score|num }}</td></tr>
+      <tr><td class="label">Total score</td><td>{{ profile.total_score|num }}</td></tr>
+      <tr><td class="label">Play count</td><td>{{ profile.playcount|num }}</td></tr>
+      <tr><td class="label">Play time</td><td>{{ profile.playtime }} <span class="muted">(approx)</span></td></tr>
+      <tr><td class="label">Total hits</td><td>{{ profile.total_hits|num }}</td></tr>
+      <tr><td class="label">Max combo</td><td>{{ profile.max_combo|num }}x</td></tr>
+      <tr><td class="label">Hit accuracy</td><td>{{ '%.2f'|format(user.total_accuracy) if user.total_accuracy is not none else '-' }}%</td></tr>
+      <tr><td class="label">Grades</td><td>{{ m.grades(profile.grades) }}</td></tr>
+      <tr><td class="label">First places</td><td>{{ profile.first_place_count }}</td></tr>
+    </tbody>
+  </table>
+
+  {% if profile.timelines.playcount %}
+  <h2>Over time</h2>
+  <div class="toolbar" id="range">
+    <button class="btn active" data-days="0">All</button>
+    <button class="btn" data-days="90">90d</button>
+    <button class="btn" data-days="30">30d</button>
+  </div>
+  {% if profile.timelines.rank|length > 1 %}<div class="card"><canvas id="rankc" height="70"></canvas></div>{% endif %}
+  {% if profile.timelines.pp|length > 1 %}<div class="card"><canvas id="ppc" height="70"></canvas></div>{% endif %}
+  <div class="card"><canvas id="pc" height="70"></canvas></div>
+  <script>
+  const tf = { family: 'VT323' };
+  const DATA = {
+    rank: {{ profile.timelines.rank | tojson }},
+    pp: {{ profile.timelines.pp | tojson }},
+    pc: {{ profile.timelines.playcount | tojson }},
+  };
+  const charts = [];
+  function mk(id, series, color, opts){
+    const el = document.getElementById(id);
+    if (!el || series.length < 2) return;
+    const c = new Chart(el, {
+      type: 'line',
+      data: { datasets: [{ label: opts.label, data: series.map(p => ({x: p[0], y: p[1]})),
+        borderColor: color, backgroundColor: color + '26', fill: opts.fill !== false,
+        pointRadius: 0, stepped: opts.stepped || false }] },
+      options: { parsing: false, animation: false,
+        plugins: { legend: { labels: { font: tf } } },
+        scales: {
+          x: { type: 'linear', ticks: { font: tf, maxTicksLimit: 7,
+               callback: v => new Date(v).toISOString().slice(0, 10) } },
+          y: Object.assign({ ticks: { font: tf } }, opts.y || {})
+        } }
+    });
+    charts.push({ chart: c, series });
+  }
+  mk('rankc', DATA.rank, '#000080', { label: 'Global rank', fill: false, y: { reverse: true } });
+  mk('ppc', DATA.pp, '#b8860b', { label: 'Total pp' });
+  mk('pc', DATA.pc, '#1084d0', { label: 'Submitted scores', stepped: true, y: { beginAtZero: true } });
+
+  document.querySelectorAll('#range button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('#range button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    const days = +b.dataset.days;
+    const cut = days ? Date.now() - days * 86400000 : 0;
+    charts.forEach(({ chart, series }) => {
+      const f = series.filter(p => p[0] >= cut).map(p => ({x: p[0], y: p[1]}));
+      chart.data.datasets[0].data = f.length ? f : series.map(p => ({x: p[0], y: p[1]}));
+      chart.update();
+    });
+  });
+  </script>
+  {% endif %}
+
+  <h2>Top scores</h2>
+  {% for s, w in weighted %}
+    {{ m.score_card(s, show_player=False, rank=loop.index, weight=w) }}
+  {% else %}
+    <p class="muted">No ranked scores yet.</p>
+  {% endfor %}
+
+  {% if profile.first_places %}
+  <h2>First place ranks ({{ profile.first_place_count }})</h2>
+  {% for s in profile.first_places %}{{ m.score_card(s, show_player=False) }}{% endfor %}
+  {% endif %}
+
+  {% if profile.most_played %}
+  <h2>Most played</h2>
+  <table class="info">
+    <thead><tr><th>Beatmap</th><th class="pp">Plays</th></tr></thead>
+    <tbody>
+      {% for mp in profile.most_played %}
+      <tr>
+        <td><a href="{{ url_for('web.beatmap_detail', beatmap_id=mp.beatmap.id) }}">{{ mp.beatmap.artist }} - {{ mp.beatmap.title }}</a>
+          <span class="muted">[{{ mp.beatmap.difficulty_name }}]</span></td>
+        <td class="pp">{{ mp.count }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if recent %}
+  <h2>Recent</h2>
+  {% for s in recent %}{{ m.score_card(s, show_player=False) }}{% endfor %}
+  {% endif %}
+{% endblock %}

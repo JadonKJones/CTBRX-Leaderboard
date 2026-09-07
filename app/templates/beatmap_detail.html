@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block winpath %}BEATMAP{% endblock %}
+{% block content %}
+  <h2>{{ beatmap.artist }} - {{ beatmap.title }}</h2>
+  <table class="info">
+    <tbody>
+      <tr><td class="label">Difficulty</td><td>{{ beatmap.difficulty_name }}</td></tr>
+      <tr><td class="label">Star rating</td><td>{{ '%.2f'|format(beatmap.star_rating or beatmap.star_rating_normal) }}&#9733; <span class="muted">(osu!catch, nomod)</span></td></tr>
+      <tr><td class="label">CS / AR / OD / HP</td><td>{{ beatmap.circle_size }} / {{ beatmap.approach_rate }} / {{ beatmap.overall_difficulty }} / {{ beatmap.hp_drain }}</td></tr>
+      <tr><td class="label">BPM / Max combo</td><td>{{ beatmap.bpm }} / {{ beatmap.max_combo }}x</td></tr>
+      <tr><td class="label">Status</td><td>{{ beatmap.status }}</td></tr>
+      <tr><td class="label">Links</td><td>
+        <a href="https://osu.ppy.sh/beatmaps/{{ beatmap.id }}">osu! page</a> &middot;
+        <a href="https://osu.ppy.sh/beatmapsets/{{ beatmap.beatmapset_id }}">set</a>
+      </td></tr>
+    </tbody>
+  </table>
+
+  <h2>Scores</h2>
+  {% for s in scores %}
+    {{ m.score_card(s, show_beatmap=False, rank=loop.index) }}
+  {% else %}
+    <p class="muted">No scores on this beatmap yet.</p>
+  {% endfor %}
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block winpath %}BEATMAPS{% endblock %}
+{% block content %}
+  <h2>Beatmaps</h2>
+  <div class="toolbar">
+    <input type="search" id="search" placeholder="Search artist / title / difficulty / id..." value="{{ search }}" style="min-width:280px">
+  </div>
+  <table class="info">
+    <thead><tr><th>Beatmap</th><th class="acc">Stars</th><th class="pp">Plays</th></tr></thead>
+    <tbody id="rows"><tr><td colspan="3" class="muted">Loading&hellip;</td></tr></tbody>
+  </table>
+  <div class="pager">
+    <button class="btn" id="prev">&laquo; Prev</button>
+    <span id="pageinfo" class="muted"></span>
+    <button class="btn" id="next">Next &raquo;</button>
+  </div>
+<script>
+const SIZE = {{ page_size }};
+let page = {{ page if page > 0 else 1 }};
+const rows = document.getElementById('rows');
+const search = document.getElementById('search');
+async function load(){
+  rows.innerHTML = '<tr><td colspan="3" class="muted">Loading&hellip;</td></tr>';
+  const p = new URLSearchParams({page});
+  if (search.value) p.set('search', search.value);
+  const data = await (await fetch('/api/beatmaps?' + p)).json();
+  if (!data.beatmaps.length){ rows.innerHTML = '<tr><td colspan="3" class="muted">No beatmaps.</td></tr>'; }
+  else rows.innerHTML = data.beatmaps.map(b => `
+    <tr>
+      <td><a href="/beatmaps/${b.id}">${b.artist} - ${b.title}</a> <span class="muted">[${b.difficultyName}]</span></td>
+      <td class="acc">${(b.starRating || b.starRatingNormal) ? (b.starRating || b.starRatingNormal).toFixed(2) : '-'}&#9733;</td>
+      <td class="pp">${b.playcount}</td>
+    </tr>`).join('');
+  const pages = Math.max(1, Math.ceil((data.total || 0) / SIZE));
+  document.getElementById('pageinfo').textContent = `page ${page} / ${pages}`;
+  document.getElementById('prev').disabled = page <= 1;
+  document.getElementById('next').disabled = page >= pages;
+}
+document.getElementById('prev').onclick = () => { if (page > 1){ page--; load(); } };
+document.getElementById('next').onclick = () => { page++; load(); };
+let t; search.oninput = () => { clearTimeout(t); t = setTimeout(() => { page = 1; load(); }, 400); };
+load();
+</script>
+{% endblock %}

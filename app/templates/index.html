@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block winpath %}INDEX{% endblock %}
+{% block content %}
+  <div style="text-align:center">
+    <span class="under-construction">&#128679; {{ SITE_NAME }} &mdash; osu!catch relax &#128679;</span>
+    <h1>{{ SITE_NAME }}</h1>
+    <p>Leaderboard of osu!lazer <b>osu!catch</b> scores set with the <b>Relax</b> mod.<br>
+       Scores submit automatically from the global score feed, usually within a couple of minutes.</p>
+  </div>
+  <hr class="hr-rainbow">
+
+  <div class="statgrid">
+    <div class="card">Players <span class="big">{{ stats.players }}</span></div>
+    <div class="card">Scores <span class="big">{{ stats.scores }}</span></div>
+    <div class="card">Beatmaps <span class="big">{{ stats.beatmaps }}</span></div>
+    <div class="card">Scores today <span class="big">{{ stats.scores_today }}</span></div>
+  </div>
+
+  <div class="home-cols">
+    <div class="home-main">
+      <div class="toolbar" id="feedtabs">
+        <button class="btn active" data-feed="fp">First Places</button>
+        <button class="btn" data-feed="hp">High PP</button>
+      </div>
+      <div id="feed-fp">
+        {% for s in first_places %}{{ m.score_card(s) }}
+        {% else %}<p class="muted">No #1 scores yet.</p>{% endfor %}
+      </div>
+      <div id="feed-hp" hidden>
+        {% for s in high_pp %}{{ m.score_card(s, rank=loop.index) }}
+        {% else %}<p class="muted">No scored plays yet.</p>{% endfor %}
+      </div>
+    </div>
+
+    <div class="home-side">
+      <h2>Trending this week</h2>
+      <table class="info">
+        <thead><tr><th>Beatmap</th><th class="pp">Plays</th></tr></thead>
+        <tbody>
+          {% for t in trending %}
+          <tr>
+            <td><a href="{{ url_for('web.beatmap_detail', beatmap_id=t.beatmap.id) }}">{{ t.beatmap.artist }} - {{ t.beatmap.title }}</a>
+              <span class="muted">[{{ t.beatmap.difficulty_name }}]</span></td>
+            <td class="pp">{{ t.count }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="2" class="muted">No plays in the last 7 days yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+document.querySelectorAll('#feedtabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#feedtabs button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  document.getElementById('feed-fp').hidden = b.dataset.feed !== 'fp';
+  document.getElementById('feed-hp').hidden = b.dataset.feed !== 'hp';
+});
+</script>
+{% endblock %}

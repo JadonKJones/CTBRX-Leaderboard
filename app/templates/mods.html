@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block winpath %}MODS{% endblock %}
+{% block content %}
+  <h2>Mod leaderboards</h2>
+  <p class="muted">Pick a mod combination. RX is on every score, so it isn't shown.
+     Nothing selected = nomod.</p>
+
+  <div class="toolbar" id="toggles">
+    {% for mod in toggle_mods %}
+      <button class="btn mod-toggle" data-mod="{{ mod }}">{{ mod }}</button>
+    {% endfor %}
+    <button class="btn" id="clear">clear</button>
+  </div>
+
+  {% if combos %}
+  <p class="muted" style="margin-bottom:6px">Combos with data:</p>
+  <div class="toolbar" id="quick">
+    {% for c, n in combos %}
+      <button class="btn" data-combo="{{ c }}">{{ c }} <span class="muted">({{ n }})</span></button>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <h3 id="heading">nomod</h3>
+  <table class="info">
+    <thead><tr><th class="rank">#</th><th>Player</th><th class="acc">Accuracy</th><th class="acc">Plays</th><th class="pp">PP</th></tr></thead>
+    <tbody id="rows"><tr><td colspan="5" class="muted">Loading&hellip;</td></tr></tbody>
+  </table>
+
+<script>
+const TOGGLE = Array.from(document.querySelectorAll('.mod-toggle'));
+const rows = document.getElementById('rows');
+let selected = new Set({{ preselect | tojson }});
+
+function combo(){ return [...selected].sort().join('') || 'NM'; }
+function flag(cc){ return cc && cc !== 'XX' ? `<img src="https://flagcdn.com/20x15/${cc.toLowerCase()}.png" width="20" height="15" style="vertical-align:middle"> ` : ''; }
+
+function syncButtons(){
+  TOGGLE.forEach(b => b.classList.toggle('active', selected.has(b.dataset.mod)));
+  document.getElementById('heading').textContent = selected.size ? combo() : 'nomod';
+  const u = combo();
+  history.replaceState(null, '', u === 'NM' ? '/mods' : '/mods/' + u);
+}
+
+async function load(){
+  syncButtons();
+  rows.innerHTML = '<tr><td colspan="5" class="muted">Loading&hellip;</td></tr>';
+  const data = await (await fetch('/api/mod-leaderboard/' + combo())).json();
+  if (!data.length){ rows.innerHTML = '<tr><td colspan="5" class="muted">No scores with this combo yet.</td></tr>'; return; }
+  rows.innerHTML = data.map((r, i) => `
+    <tr>
+      <td class="rank">#${i + 1}</td>
+      <td>${r.user ? flag(r.user.countryCode) + `<a href="/users/${r.userId}">${r.user.username}</a>` : '?'}</td>
+      <td class="acc">${r.accuracy === null ? '-' : r.accuracy.toFixed(2)}%</td>
+      <td class="acc">${r.plays}</td>
+      <td class="pp">${r.pp.toFixed(0)}</td>
+    </tr>`).join('');
+}
+
+TOGGLE.forEach(b => b.onclick = () => {
+  const m = b.dataset.mod;
+  selected.has(m) ? selected.delete(m) : selected.add(m);
+  load();
+});
+document.getElementById('clear').onclick = () => { selected.clear(); load(); };
+document.querySelectorAll('#quick button').forEach(b => b.onclick = () => {
+  selected = new Set(b.dataset.combo === 'NM' ? [] : b.dataset.combo.match(/.{2}/g));
+  load();
+});
+load();
+</script>
+{% endblock %}

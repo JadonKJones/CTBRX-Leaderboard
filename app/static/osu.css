@@ -1,0 +1,232 @@
+/* CTBRX - "osu! website" theme, matched to osu.ppy.sh (osu-web lazer, base-hue 115).
+   Loaded always; every rule is scoped under html[data-theme="osu"] so it only
+   overrides the Win98 base when active. Palette pulled from the live site:
+   body #171c17, boxes #2f382e, muted text #91a38f, links #aad9a6, font Inter. */
+
+html[data-theme="osu"] {
+  --bg: #171c17;
+  --box: #2f382e;
+  --box-2: #262d25;
+  --nav: #10140f;
+  --line: #3a453a;
+  --ink: #ffffff;
+  --muted: #91a38f;
+  --link: #aad9a6;
+  --accent: #a4f08f;      /* bright green, active states */
+  --yellow: #ffd966;
+}
+
+html[data-theme="osu"] body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Inter', 'Helvetica Neue', Tahoma, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+html[data-theme="osu"] a { color: var(--link); }
+html[data-theme="osu"] a:visited { color: var(--link); }
+html[data-theme="osu"] a:hover { color: #fff; }
+
+html[data-theme="osu"] .page {
+  max-width: 1200px;
+  background: var(--bg);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* top bar - osu's slim dark nav */
+html[data-theme="osu"] .titlebar {
+  background: var(--nav);
+  color: var(--link);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 14px 20px;
+}
+html[data-theme="osu"] .titlebar .btns { display: none; }
+
+html[data-theme="osu"] .menubar {
+  background: var(--nav);
+  border-bottom: 0;
+  padding: 0 14px;
+  gap: 0;
+  font-size: 0.9rem;
+  align-items: stretch;
+}
+html[data-theme="osu"] .menubar a {
+  color: var(--link);
+  padding: 13px 15px;
+  border-bottom: 4px solid transparent;
+  font-weight: 600;
+}
+html[data-theme="osu"] .menubar a:hover { color: #fff; text-decoration: none; }
+html[data-theme="osu"] .menubar a.active {
+  color: #fff;
+  text-decoration: none;
+  border-bottom-color: var(--accent);
+}
+
+html[data-theme="osu"] .content {
+  background: var(--bg);
+  margin: 0;
+  border: 0;
+  padding: 30px 32px 40px;
+}
+
+html[data-theme="osu"] h1 {
+  font-family: inherit; font-weight: 700; color: #fff; font-size: 1.7rem; line-height: 1.2;
+}
+html[data-theme="osu"] h2 {
+  font-family: inherit; font-weight: 700; color: #fff; font-size: 1.15rem;
+  background: none; padding: 0 0 10px; margin: 34px 0 16px;
+  border-bottom: 1px solid var(--line);
+}
+html[data-theme="osu"] h2::before { content: none; }
+html[data-theme="osu"] h3 {
+  font-family: inherit; font-weight: 700; color: var(--ink); font-size: 1rem; line-height: 1.3;
+}
+
+html[data-theme="osu"] .hr-rainbow { background: var(--line); height: 1px; }
+
+html[data-theme="osu"] .under-construction {
+  background: var(--box); color: var(--muted);
+  border: 1px dashed var(--line); transform: none; border-radius: 6px; font-weight: 600;
+}
+
+html[data-theme="osu"] .btn,
+html[data-theme="osu"] .menubar-actions a {
+  background: var(--box);
+  color: var(--ink);
+  border: 0;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-weight: 600;
+}
+html[data-theme="osu"] .btn:hover { background: #3c473b; color: #fff; }
+html[data-theme="osu"] .btn:active,
+html[data-theme="osu"] .btn.active {
+  background: var(--accent); color: #14200f;
+}
+html[data-theme="osu"] .btn[disabled] { color: var(--muted); background: var(--box); }
+html[data-theme="osu"] .btn[disabled]:hover { background: var(--box); }
+
+html[data-theme="osu"] input[type=text],
+html[data-theme="osu"] input[type=search],
+html[data-theme="osu"] select {
+  background: #10140f; color: var(--ink);
+  border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px;
+}
+
+/* tables - osu's "floating rounded row" ranking style */
+html[data-theme="osu"] table.info {
+  border: 0; border-collapse: separate; border-spacing: 0 3px;
+}
+html[data-theme="osu"] table.info thead th {
+  background: none; border: 0; color: var(--muted);
+  font-weight: 700; font-size: 0.78rem; letter-spacing: 0; text-transform: none;
+  padding: 4px 11px;
+}
+html[data-theme="osu"] table.info thead th.rank,
+html[data-theme="osu"] table.info thead th.pp { color: #fff; }
+html[data-theme="osu"] table.info tbody td {
+  background: var(--box); border: 0; padding: 9px 11px; color: var(--ink);
+}
+html[data-theme="osu"] table.info tbody tr td:first-child { border-radius: 6px 0 0 6px; }
+html[data-theme="osu"] table.info tbody tr td:last-child { border-radius: 0 6px 6px 0; }
+html[data-theme="osu"] table.info td.label {
+  background: var(--box-2); color: var(--muted); font-weight: 600;
+}
+html[data-theme="osu"] table.info tbody tr:nth-child(even) td { background: var(--box); }
+html[data-theme="osu"] table.info tbody tr:nth-child(even) td.label { background: var(--box-2); }
+html[data-theme="osu"] table.info tbody tr:hover td { background: #3c473b; }
+html[data-theme="osu"] table.info th.sort:hover { background: none; color: #fff; }
+
+html[data-theme="osu"] .rank { color: var(--muted); }
+html[data-theme="osu"] .pp { color: #fff; font-weight: 700; }
+html[data-theme="osu"] .muted { color: var(--muted); }
+
+html[data-theme="osu"] .card {
+  background: var(--box);
+  border: 0;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+html[data-theme="osu"] .card .sub { color: var(--muted); }
+html[data-theme="osu"] .card.medal-gold   { background: #33321f; border-left: 4px solid #f0e4a8; }
+html[data-theme="osu"] .card.medal-silver { background: #2f3231; border-left: 4px solid #e0e0eb; }
+html[data-theme="osu"] .card.medal-bronze { background: #33291f; border-left: 4px solid #b88f7a; }
+html[data-theme="osu"] .card.medal-gold   .grade { color: #f0e4a8; }
+html[data-theme="osu"] .card.medal-silver .grade { color: #e0e0eb; }
+html[data-theme="osu"] .card.medal-bronze .grade { color: #d8a98f; }
+
+html[data-theme="osu"] .chip {
+  background: var(--box-2); color: var(--link);
+  border: 0; border-radius: 4px;
+}
+html[data-theme="osu"] .mod {
+  background: var(--box-2); color: var(--ink);
+  border: 0; border-radius: 4px;
+}
+
+html[data-theme="osu"] img.flag { border: 0; border-radius: 3px; }
+
+html[data-theme="osu"] .grades .gr {
+  background: #10140f; border: 1px solid var(--line); border-radius: 5px;
+  font-family: inherit; font-weight: 700; font-size: 0.72rem;
+}
+html[data-theme="osu"] .grades .gr b { font-family: inherit; color: var(--ink); }
+html[data-theme="osu"] .grade-X, html[data-theme="osu"] .grade-XH { color: var(--yellow); }
+html[data-theme="osu"] .grade-S, html[data-theme="osu"] .grade-SH { color: #66d9ff; }
+html[data-theme="osu"] .grade-A { color: #8ae06f; }
+html[data-theme="osu"] .grade-B { color: #ffb066; }
+html[data-theme="osu"] .grade-C, html[data-theme="osu"] .grade-D { color: #ff7070; }
+
+html[data-theme="osu"] details.faq {
+  background: var(--box); border: 0; border-radius: 8px;
+}
+html[data-theme="osu"] details.faq > summary {
+  font-family: inherit; font-weight: 700; color: var(--ink); font-size: 0.98rem;
+}
+html[data-theme="osu"] details.faq[open] > summary {
+  background: none; color: #fff;
+  border-bottom: 1px solid var(--line);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+html[data-theme="osu"] details.faq > summary:hover { text-decoration: none; color: #fff; }
+html[data-theme="osu"] .faq-body { background: transparent; border-top: 0; }
+
+html[data-theme="osu"] .statgrid .card { text-align: center; }
+html[data-theme="osu"] .statgrid .big { font-family: inherit; font-weight: 800; color: #fff; }
+
+html[data-theme="osu"] .profile-head img.avatar { border: 0; border-radius: 10px; }
+html[data-theme="osu"] .profile-head .name {
+  font-family: inherit; font-weight: 700; color: #fff; font-size: 1.3rem;
+}
+html[data-theme="osu"] .profile-head .big-rank {
+  font-family: inherit; font-weight: 700; color: var(--accent); font-size: 1.6rem;
+}
+
+html[data-theme="osu"] .home-side { top: 12px; }
+
+html[data-theme="osu"] footer.page-footer {
+  background: var(--nav); color: var(--muted);
+  border-top: 0;
+}
+
+/* theme toggle */
+.theme-toggle { margin-left: auto; cursor: pointer; font: inherit; }
+.menubar .theme-toggle {
+  background: #c0c0c0; border: 2px solid #fff;
+  border-right-color: #404040; border-bottom-color: #404040;
+  padding: 3px 10px; color: #000;
+}
+html[data-theme="osu"] .menubar .theme-toggle {
+  align-self: center;
+  background: var(--box); color: var(--ink); border: 0; border-radius: 999px;
+  padding: 6px 14px; font-weight: 700;
+}
+html[data-theme="osu"] .menubar .theme-toggle:hover { background: #3c473b; }

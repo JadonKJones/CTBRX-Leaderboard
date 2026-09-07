@@ -62,6 +62,23 @@ h2::before { content: "\1F4C1"; }
 h2:first-child { margin-top: 0; }
 h3 { font-family: 'Press Start 2P', monospace; font-size: 0.8rem; color: #000080; margin-bottom: 8px; line-height: 1.5; }
 
+details.faq {
+  border: 2px solid; border-color: #fff #808080 #808080 #fff;
+  background: #c0c0c0; margin-bottom: 8px;
+}
+details.faq > summary {
+  font-family: 'Press Start 2P', monospace; font-size: 0.8rem; color: #000080;
+  padding: 10px 12px; cursor: pointer; list-style: none; user-select: none;
+  display: flex; align-items: center; gap: 10px;
+}
+details.faq > summary::-webkit-details-marker { display: none; }
+details.faq > summary::before { content: "\25B8"; font-family: monospace; font-size: 1rem; }
+details.faq[open] > summary::before { content: "\25BE"; }
+details.faq[open] > summary { background: linear-gradient(90deg, #000080, #1084d0); color: #fff; }
+details.faq > summary:hover { text-decoration: underline; }
+.faq-body { background: #fff; border-top: 1px solid #808080; padding: 4px 14px 10px; }
+.faq-body p { margin-top: 10px; }
+
 .hr-rainbow {
   height: 4px; border: 0; margin: 18px 0;
   background: linear-gradient(90deg,#ff0000,#ff9900,#ffee00,#00cc00,#0099ff,#6633ff);

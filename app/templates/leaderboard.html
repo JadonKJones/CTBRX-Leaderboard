@@ -36,14 +36,14 @@ async function load(){
   const p = new URLSearchParams({page});
   if (q.country.value) p.set('countryCode', q.country.value);
   if (q.search.value) p.set('search', q.search.value);
-  const r = await fetch('/api/players?' + p);
+  const r = await fetch('{{ request.script_root }}/api/players?' + p);
   const data = await r.json();
   const start = (page - 1) * SIZE;
   if (!data.players.length){ rows.innerHTML = '<tr><td colspan="4" class="muted">No players.</td></tr>'; }
   else rows.innerHTML = data.players.map((u, i) => `
     <tr>
       <td class="rank">#${start + i + 1}</td>
-      <td>${flag(u.countryCode)}<a href="/users/${u.id}">${u.username}</a></td>
+      <td>${flag(u.countryCode)}<a href="{{ request.script_root }}/users/${u.id}">${u.username}</a></td>
       <td class="acc">${u.totalAccuracy === null ? '-' : u.totalAccuracy.toFixed(2)}%</td>
       <td class="pp">${u.totalPp === null ? '-' : u.totalPp.toFixed(0)}</td>
     </tr>`).join('');

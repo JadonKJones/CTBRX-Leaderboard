@@ -4,8 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ SITE_NAME }}{% block title %}{% endblock %}</title>
-  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='osu.css') }}">
   <script defer src="{{ url_for('static', filename='sort.js') }}"></script>
   {% block head %}{% endblock %}
 </head>
@@ -23,6 +25,7 @@
       <a href="{{ url_for('web.topscores') }}" class="{{ 'active' if request.endpoint == 'web.topscores' }}">Top Scores</a>
       <a href="{{ url_for('web.beatmaps') }}" class="{{ 'active' if request.endpoint in ('web.beatmaps', 'web.beatmap_detail') }}">Beatmaps</a>
       <a href="{{ url_for('web.faq') }}" class="{{ 'active' if request.endpoint == 'web.faq' }}">FAQ</a>
+      <button id="theme-toggle" class="theme-toggle" type="button">theme</button>
     </div>
     <div class="content">
       {% block content %}{% endblock %}
@@ -34,5 +37,22 @@
       <br><span class="muted">pp recomputed locally &mdash; not affiliated with osu!</span>
     </footer>
   </div>
+  <script>
+  (function () {
+    var b = document.getElementById('theme-toggle');
+    if (!b) return;
+    function label() {
+      var osu = document.documentElement.getAttribute('data-theme') === 'osu';
+      b.textContent = osu ? '🪟 Win98' : '🌸 osu!';
+    }
+    label();
+    b.addEventListener('click', function () {
+      var next = document.documentElement.getAttribute('data-theme') === 'osu' ? 'win98' : 'osu';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('theme', next); } catch (e) {}
+      label();
+    });
+  })();
+  </script>
 </body>
 </html>

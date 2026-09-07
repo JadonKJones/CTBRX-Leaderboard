@@ -45,12 +45,12 @@ function syncButtons(){
 async function load(){
   syncButtons();
   rows.innerHTML = '<tr><td colspan="5" class="muted">Loading&hellip;</td></tr>';
-  const data = await (await fetch('/api/mod-leaderboard/' + combo())).json();
+  const data = await (await fetch('{{ request.script_root }}/api/mod-leaderboard/' + combo())).json();
   if (!data.length){ rows.innerHTML = '<tr><td colspan="5" class="muted">No scores with this combo yet.</td></tr>'; return; }
   rows.innerHTML = data.map((r, i) => `
     <tr>
       <td class="rank">#${i + 1}</td>
-      <td>${r.user ? flag(r.user.countryCode) + `<a href="/users/${r.userId}">${r.user.username}</a>` : '?'}</td>
+      <td>${r.user ? flag(r.user.countryCode) + `<a href="{{ request.script_root }}/users/${r.userId}">${r.user.username}</a>` : '?'}</td>
       <td class="acc">${r.accuracy === null ? '-' : r.accuracy.toFixed(2)}%</td>
       <td class="acc">${r.plays}</td>
       <td class="pp">${r.pp.toFixed(0)}</td>

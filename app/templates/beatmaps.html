@@ -23,11 +23,11 @@ async function load(){
   rows.innerHTML = '<tr><td colspan="3" class="muted">Loading&hellip;</td></tr>';
   const p = new URLSearchParams({page});
   if (search.value) p.set('search', search.value);
-  const data = await (await fetch('/api/beatmaps?' + p)).json();
+  const data = await (await fetch('{{ request.script_root }}/api/beatmaps?' + p)).json();
   if (!data.beatmaps.length){ rows.innerHTML = '<tr><td colspan="3" class="muted">No beatmaps.</td></tr>'; }
   else rows.innerHTML = data.beatmaps.map(b => `
     <tr>
-      <td><a href="/beatmaps/${b.id}">${b.artist} - ${b.title}</a> <span class="muted">[${b.difficultyName}]</span></td>
+      <td><a href="{{ request.script_root }}/beatmaps/${b.id}">${b.artist} - ${b.title}</a> <span class="muted">[${b.difficultyName}]</span></td>
       <td class="acc">${(b.starRating || b.starRatingNormal) ? (b.starRating || b.starRatingNormal).toFixed(2) : '-'}&#9733;</td>
       <td class="pp">${b.playcount}</td>
     </tr>`).join('');

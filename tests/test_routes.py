@@ -26,7 +26,7 @@ def test_pages_ok(client, db):
 def test_api(client, db):
     _seed(db)
     assert client.get("/api/players").get_json()["total"] == 1
-    assert client.get("/api/beatmaps").get_json()["beatmaps"][0]["playcount"] == 1
+    assert client.get("/api/beatmaps").get_json()["beatmaps"][0]["plays"] == 1
     assert client.get("/api/mod-leaderboard/NM").get_json()[0]["userId"] == 5
 
 

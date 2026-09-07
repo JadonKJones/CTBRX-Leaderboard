@@ -66,7 +66,7 @@ html[data-theme="osu"] .content {
   background: transparent; width: 100%; max-width: 1280px; margin: 0;
   border: 0; padding: 34px 32px 70px;
 }
-html[data-theme="osu"] .menubar { width: 100%; padding: 0 32px; }
+html[data-theme="osu"] .menubar { width: 100%; padding: 0 150px 0 32px; }
 html[data-theme="osu"] .page-footer { width: 100%; }
 
 html[data-theme="osu"] .page-footer {
@@ -115,7 +115,7 @@ html[data-theme="osu"] select {
 }
 
 html[data-theme="osu"] .menubar .theme-toggle {
-  align-self: center; margin-left: auto;
+  right: 32px;
   background: var(--box); color: var(--ink); border: 0; border-radius: 999px;
   padding: 6px 14px; font-weight: 700;
 }
@@ -324,7 +324,45 @@ html[data-theme="osu"] .profile-grades .gr-A  { background: hsl(120 60% 50% / 0.
   html[data-theme="osu"] .prank { text-align: left; }
 }
 
-/* ---- theme toggle in the Win98 skin (base, unscoped) -------------- */
+/* ---- beatmap browser (farm-map style) ------------------------ */
+html[data-theme="osu"] .mapfilters {
+  background: var(--box); border: 0; border-radius: var(--radius);
+  padding: 14px 16px; gap: 10px;
+}
+html[data-theme="osu"] .mapfilters input[type=number] {
+  background: var(--box-2); color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 8px;
+}
+html[data-theme="osu"] .rng label { color: var(--muted); }
+html[data-theme="osu"] .modf { padding: 6px 12px; }
+
+html[data-theme="osu"] .maplist { gap: 6px; }
+html[data-theme="osu"] .mapc {
+  background: var(--box); border: 0; border-radius: var(--radius); overflow: hidden;
+  transition: background 0.12s;
+}
+html[data-theme="osu"] .mapc:hover { background: var(--box-hi); }
+html[data-theme="osu"] .mapc__cover { width: 110px; flex-basis: 110px; border: 0; }
+html[data-theme="osu"] .mapc__main { padding: 10px 6px; }
+html[data-theme="osu"] .mapc__title { color: #fff; font-weight: 700; }
+html[data-theme="osu"] .mapc__diff { color: var(--link); }
+html[data-theme="osu"] .mapb {
+  background: var(--box-2); color: var(--muted); border: 0; border-radius: 4px; padding: 2px 8px;
+}
+html[data-theme="osu"] .mapb--sr { background: hsl(285 45% 45% / 0.35); color: #e9d5f5; }
+html[data-theme="osu"] .mapb--bpm { background: hsl(140 45% 40% / 0.3); color: #cdefd6; }
+html[data-theme="osu"] .mapb--ext { color: var(--link); }
+html[data-theme="osu"] .mapc__stats { border-left: 1px solid var(--line); flex-basis: 110px; }
+html[data-theme="osu"] .mapc__pp {
+  font-family: inherit; font-weight: 800; font-size: 1.15rem; color: var(--accent);
+}
+html[data-theme="osu"] .mapc__pp b { color: var(--muted); font-weight: 600; }
+
+@media (max-width: 620px) {
+  .mapc__cover { display: none; }
+}
+
+/* ---- theme toggle in the classic skin (base, unscoped) ----------- */
 .menubar .theme-toggle {
   background: #c0c0c0; border: 2px solid #fff;
   border-right-color: #404040; border-bottom-color: #404040;

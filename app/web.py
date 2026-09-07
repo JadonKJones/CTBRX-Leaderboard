@@ -316,46 +316,118 @@ def api_players():
     return jsonify({"players": players, "total": total, "page": page})
 
 
+_MAP_SORTS = {
+    "pp": lambda m: (m["pp"] or 0, m["plays"]),
+    "plays": lambda m: (m["plays"], m["pp"] or 0),
+    "stars": lambda m: (m["stars"] or 0),
+    "bpm": lambda m: m["bpm"],
+    "length": lambda m: m["length"],
+    "recent": lambda m: m["lastPlay"] or "",
+}
+
+
 @api_bp.get("/beatmaps")
 def api_beatmaps():
     page = max(1, request.args.get("page", 1, type=int))
-    search = request.args.get("search")
+    search = (request.args.get("search") or "").strip()
+    sort = request.args.get("sort", "pp")
+    if sort not in _MAP_SORTS:
+        sort = "pp"
+    ascending = request.args.get("dir") == "asc"
+    want_mods = {m for m in (request.args.get("mods") or "").upper().split(",") if m}
 
-    q = (
-        db.session.query(Beatmap, func.count(Score.id).label("plays"))
+    def _range(name):
+        return (
+            request.args.get(name + "Min", type=float),
+            request.args.get(name + "Max", type=float),
+        )
+
+    star_lo, star_hi = _range("star")
+    bpm_lo, bpm_hi = _range("bpm")
+    len_lo, len_hi = _range("len")
+    pp_lo, pp_hi = _range("pp")
+
+    agg = (
+        db.session.query(
+            Beatmap,
+            func.count(Score.id).label("plays"),
+            func.max(Score.pp).label("maxpp"),
+            func.max(Score.date).label("lastplay"),
+        )
         .join(Score, Score.beatmap_id == Beatmap.id)
+        .filter(Score.hidden.is_(False))
         .group_by(Beatmap.id)
     )
     if search:
         if search.isdigit():
-            q = q.filter(Beatmap.id == int(search))
+            agg = agg.filter(Beatmap.id == int(search))
         else:
             like = f"%{search}%"
-            q = q.filter(
+            agg = agg.filter(
                 Beatmap.artist.ilike(like)
                 | Beatmap.title.ilike(like)
                 | Beatmap.difficulty_name.ilike(like)
             )
-    rows = (
-        q.order_by(func.count(Score.id).desc())
-        .offset((page - 1) * BEATMAP_PAGE)
-        .limit(BEATMAP_PAGE)
-        .all()
+
+    map_mods: dict[int, set[str]] = {}
+    if want_mods:
+        for bid, mods in (
+            db.session.query(Score.beatmap_id, Score.mods)
+            .filter(Score.hidden.is_(False))
+            .all()
+        ):
+            map_mods.setdefault(bid, set()).update(
+                m[:2] for m in (mods or []) if m[:2] != "RX"
+            )
+
+    items = []
+    for b, plays, maxpp, lastplay in agg.all():
+        sr = b.star_rating or b.star_rating_normal or None
+        if star_lo is not None and (sr or 0) < star_lo:
+            continue
+        if star_hi is not None and (sr or 0) > star_hi:
+            continue
+        if bpm_lo is not None and b.bpm < bpm_lo:
+            continue
+        if bpm_hi is not None and b.bpm > bpm_hi:
+            continue
+        if len_lo is not None and b.length < len_lo:
+            continue
+        if len_hi is not None and b.length > len_hi:
+            continue
+        if pp_lo is not None and (maxpp or 0) < pp_lo:
+            continue
+        if pp_hi is not None and (maxpp or 0) > pp_hi:
+            continue
+        if want_mods and not want_mods.issubset(map_mods.get(b.id, set())):
+            continue
+        items.append(
+            {
+                "id": b.id,
+                "setId": b.beatmapset_id,
+                "artist": b.artist,
+                "title": b.title,
+                "difficultyName": b.difficulty_name,
+                "stars": round(sr, 2) if sr else None,
+                "bpm": round(b.bpm),
+                "length": b.length,
+                "ar": round(b.approach_rate, 1),
+                "cs": round(b.circle_size, 1),
+                "od": round(b.overall_difficulty, 1),
+                "hp": round(b.hp_drain, 1),
+                "status": b.status,
+                "pp": round(maxpp) if maxpp else None,
+                "plays": plays,
+                "lastPlay": lastplay.isoformat() if lastplay else None,
+            }
+        )
+
+    items.sort(key=_MAP_SORTS[sort], reverse=not ascending)
+    total = len(items)
+    start = (page - 1) * BEATMAP_PAGE
+    return jsonify(
+        {"beatmaps": items[start:start + BEATMAP_PAGE], "total": total, "page": page}
     )
-    total = db.session.query(func.count(func.distinct(Score.beatmap_id))).scalar()
-    out = [
-        {
-            "id": b.id,
-            "artist": b.artist,
-            "title": b.title,
-            "difficultyName": b.difficulty_name,
-            "starRating": b.star_rating,
-            "starRatingNormal": b.star_rating_normal,
-            "playcount": plays,
-        }
-        for b, plays in rows
-    ]
-    return jsonify({"beatmaps": out, "total": total, "page": page})
 
 
 @api_bp.get("/mod-leaderboard/<combo>")

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ SITE_NAME }}{% block title %}{% endblock %}</title>
-  <script>(function(){try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+  <script>(function(){try{var t=localStorage.getItem('theme');if(t==='win98')t='classic';if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
   <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='osu.css') }}">
@@ -52,11 +52,11 @@
     if (!b) return;
     function label() {
       var osu = document.documentElement.getAttribute('data-theme') === 'osu';
-      b.textContent = osu ? '🪟 Win98' : '🌸 osu!';
+      b.textContent = osu ? 'Classic theme' : 'osu! theme';
     }
     label();
     b.addEventListener('click', function () {
-      var next = document.documentElement.getAttribute('data-theme') === 'osu' ? 'win98' : 'osu';
+      var next = document.documentElement.getAttribute('data-theme') === 'osu' ? 'classic' : 'osu';
       document.documentElement.setAttribute('data-theme', next);
       try { localStorage.setItem('theme', next); } catch (e) {}
       label();

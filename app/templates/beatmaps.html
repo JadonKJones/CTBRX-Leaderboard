@@ -2,44 +2,141 @@
 {% import "_macros.html" as m %}
 {% block winpath %}BEATMAPS{% endblock %}
 {% block content %}
-  {{ m.page_header('Beatmaps', 'Ranked osu!catch maps with at least one Relax score.') }}
-  <div class="toolbar">
-    <input type="search" id="search" placeholder="Search artist / title / difficulty / id..." value="{{ search }}" style="min-width:280px">
+  {{ m.page_header('Beatmaps') }}
+
+  <div class="mapfilters">
+    <input type="search" id="search" placeholder="song name / artist / difficulty / id&hellip;" value="{{ search }}">
+
+    <div class="modrow" id="modrow">
+      {% for mod in ['EZ', 'HD', 'HR', 'DT', 'FL'] %}
+        <button type="button" class="btn modf" data-mod="{{ mod }}">{{ mod }}</button>
+      {% endfor %}
+    </div>
+
+    <div class="rangerow">
+      <span class="rng"><label>pp</label><input type="number" id="ppMin" placeholder="min"><input type="number" id="ppMax" placeholder="max"></span>
+      <span class="rng"><label>&#9733;</label><input type="number" id="starMin" placeholder="min" step="0.1"><input type="number" id="starMax" placeholder="max" step="0.1"></span>
+      <span class="rng"><label>bpm</label><input type="number" id="bpmMin" placeholder="min"><input type="number" id="bpmMax" placeholder="max"></span>
+      <span class="rng"><label>length</label><input type="text" id="lenMin" placeholder="0:00" size="4"><input type="text" id="lenMax" placeholder="0:00" size="4"></span>
+    </div>
+
+    <div class="sortrow">
+      <select id="sort">
+        <option value="pp">Top PP</option>
+        <option value="plays">Most played</option>
+        <option value="stars">Hardest</option>
+        <option value="bpm">Fastest</option>
+        <option value="length">Longest</option>
+        <option value="recent">Recently played</option>
+      </select>
+      <button type="button" class="btn" id="dir" data-dir="desc" title="sort direction">&#9660;</button>
+      <button type="button" class="btn" id="reset">reset</button>
+    </div>
   </div>
-  <table class="info ranking">
-    <thead><tr><th>Beatmap</th><th class="acc">Stars</th><th class="pp">Plays</th></tr></thead>
-    <tbody id="rows"><tr><td colspan="3" class="muted">Loading&hellip;</td></tr></tbody>
-  </table>
+
+  <div id="maps" class="maplist"><p class="muted">Loading&hellip;</p></div>
+
   <div class="pager">
     <button class="btn" id="prev">&laquo; Prev</button>
     <span id="pageinfo" class="muted"></span>
     <button class="btn" id="next">Next &raquo;</button>
   </div>
+
 <script>
+const ROOT = '{{ request.script_root }}';
 const SIZE = {{ page_size }};
 let page = {{ page if page > 0 else 1 }};
-const rows = document.getElementById('rows');
+const maps = document.getElementById('maps');
 const search = document.getElementById('search');
-async function load(){
-  rows.innerHTML = '<tr><td colspan="3" class="muted">Loading&hellip;</td></tr>';
-  const p = new URLSearchParams({page});
-  if (search.value) p.set('search', search.value);
-  const data = await (await fetch('{{ request.script_root }}/api/beatmaps?' + p)).json();
-  if (!data.beatmaps.length){ rows.innerHTML = '<tr><td colspan="3" class="muted">No beatmaps.</td></tr>'; }
-  else rows.innerHTML = data.beatmaps.map(b => `
-    <tr>
-      <td><a href="{{ request.script_root }}/beatmaps/${b.id}">${b.artist} - ${b.title}</a> <span class="muted">[${b.difficultyName}]</span></td>
-      <td class="acc">${(b.starRating || b.starRatingNormal) ? (b.starRating || b.starRatingNormal).toFixed(2) : '-'}&#9733;</td>
-      <td class="pp">${b.playcount}</td>
-    </tr>`).join('');
-  const pages = Math.max(1, Math.ceil((data.total || 0) / SIZE));
-  document.getElementById('pageinfo').textContent = `page ${page} / ${pages}`;
-  document.getElementById('prev').disabled = page <= 1;
-  document.getElementById('next').disabled = page >= pages;
+const sortSel = document.getElementById('sort');
+const dirBtn = document.getElementById('dir');
+const selMods = new Set();
+
+const $ = id => document.getElementById(id);
+const esc = s => (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtLen = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+const parseLen = v => {
+  v = (v || '').trim();
+  if (!v) return null;
+  if (v.includes(':')) { const [mm, ss] = v.split(':'); return (+mm || 0) * 60 + (+ss || 0); }
+  return +v || null;
+};
+
+function card(b){
+  const cover = b.setId ? `https://assets.ppy.sh/beatmaps/${b.setId}/covers/list.jpg` : '';
+  return `<div class="mapc">
+    <div class="mapc__cover"${cover ? ` style="background-image:url('${cover}')"` : ''}></div>
+    <div class="mapc__main">
+      <a class="mapc__title" href="${ROOT}/beatmaps/${b.id}">${esc(b.artist)} - ${esc(b.title)} <span class="mapc__diff">[${esc(b.difficultyName)}]</span></a>
+      <div class="mapc__sub muted">${esc(b.status)} &middot; AR ${b.ar} &middot; CS ${b.cs} &middot; OD ${b.od} &middot; HP ${b.hp}</div>
+      <div class="mapc__badges">
+        <span class="mapb mapb--len">${fmtLen(b.length)}</span>
+        <span class="mapb mapb--bpm">${b.bpm} bpm</span>
+        <span class="mapb mapb--sr">${b.stars == null ? '&ndash;' : b.stars.toFixed(2)}&#9733;</span>
+        <a class="mapb mapb--ext" href="https://osu.ppy.sh/beatmaps/${b.id}" target="_blank" rel="noopener">osu!</a>
+      </div>
+    </div>
+    <div class="mapc__stats">
+      <div class="mapc__pp">${b.pp == null ? '&ndash;' : b.pp}<b>pp</b></div>
+      <div class="mapc__plays muted">${b.plays} play${b.plays === 1 ? '' : 's'}</div>
+    </div>
+  </div>`;
 }
-document.getElementById('prev').onclick = () => { if (page > 1){ page--; load(); } };
-document.getElementById('next').onclick = () => { page++; load(); };
-let t; search.oninput = () => { clearTimeout(t); t = setTimeout(() => { page = 1; load(); }, 400); };
+
+async function load(){
+  maps.innerHTML = '<p class="muted">Loading&hellip;</p>';
+  const p = new URLSearchParams({ page, sort: sortSel.value, dir: dirBtn.dataset.dir });
+  if (search.value) p.set('search', search.value);
+  if (selMods.size) p.set('mods', [...selMods].join(','));
+  for (const k of ['ppMin', 'ppMax', 'starMin', 'starMax', 'bpmMin', 'bpmMax']) {
+    if ($(k).value) p.set(k, $(k).value);
+  }
+  const lo = parseLen($('lenMin').value), hi = parseLen($('lenMax').value);
+  if (lo != null) p.set('lenMin', lo);
+  if (hi != null) p.set('lenMax', hi);
+
+  const data = await (await fetch(ROOT + '/api/beatmaps?' + p)).json();
+  maps.innerHTML = data.beatmaps.length
+    ? data.beatmaps.map(card).join('')
+    : '<p class="muted">No maps match those filters.</p>';
+
+  const pages = Math.max(1, Math.ceil((data.total || 0) / SIZE));
+  $('pageinfo').textContent = `page ${page} / ${pages} (${data.total} maps)`;
+  $('prev').disabled = page <= 1;
+  $('next').disabled = page >= pages;
+}
+
+function reload(){ page = 1; load(); }
+let t;
+const debounced = () => { clearTimeout(t); t = setTimeout(reload, 350); };
+
+search.oninput = debounced;
+sortSel.onchange = reload;
+dirBtn.onclick = () => {
+  const desc = dirBtn.dataset.dir === 'desc';
+  dirBtn.dataset.dir = desc ? 'asc' : 'desc';
+  dirBtn.innerHTML = desc ? '&#9650;' : '&#9660;';
+  reload();
+};
+document.querySelectorAll('.modf').forEach(b => b.onclick = () => {
+  const mod = b.dataset.mod;
+  selMods.has(mod) ? selMods.delete(mod) : selMods.add(mod);
+  b.classList.toggle('active', selMods.has(mod));
+  reload();
+});
+document.querySelectorAll('.rangerow input').forEach(i => i.oninput = debounced);
+$('reset').onclick = () => {
+  search.value = '';
+  selMods.clear();
+  document.querySelectorAll('.modf').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.rangerow input').forEach(i => i.value = '');
+  sortSel.value = 'pp';
+  dirBtn.dataset.dir = 'desc';
+  dirBtn.innerHTML = '&#9660;';
+  reload();
+};
+$('prev').onclick = () => { if (page > 1) { page--; load(); } };
+$('next').onclick = () => { page++; load(); };
 load();
 </script>
 {% endblock %}

@@ -190,10 +190,23 @@ def process_scores(api, scores: list[dict], cache_path: str) -> list[int]:
 # mod combos to pull per beatmap leaderboard (RX always added). Exotic combos
 # still arrive via the firehose.
 SCAN_MOD_COMBOS = (
-    [], ["HD"], ["HR"], ["DT"], ["EZ"], ["FL"], ["HT"],
-    ["HD", "DT"], ["HD", "HR"], ["EZ", "HD"], ["EZ", "DT"], 
-    ["HR", "DT"], ["EZ", "HD", "DT"],
-    ["HT", "HD"], ["HT", "HR"], ["EZ", "HT"],
+    [], 
+    # 1 mod
+    ["HD"], ["HR"], ["DT"], ["EZ"], ["FL"], ["HT"],
+    # 2 mods
+    ["HD", "HR"], ["HD", "DT"], ["HD", "HT"], ["HD", "EZ"], ["HD", "FL"],
+    ["HR", "DT"], ["HR", "FL"], ["HR", "HT"],
+    ["EZ", "DT"], ["EZ", "FL"], ["EZ", "HT"],
+    ["DT", "FL"], ["HT", "FL"],
+    # 3 mods
+    ["HD", "HR", "DT"], ["HD", "HR", "FL"], ["HD", "HR", "HT"],
+    ["HD", "EZ", "DT"], ["HD", "EZ", "FL"], ["HD", "EZ", "HT"],
+    ["HD", "DT", "FL"], ["HD", "HT", "FL"],
+    ["HR", "DT", "FL"], ["HR", "HT", "FL"],
+    ["EZ", "DT", "FL"], ["EZ", "HT", "FL"],
+    # 4 mods
+    ["HD", "HR", "DT", "FL"], ["HD", "HR", "HT", "FL"],
+    ["HD", "EZ", "DT", "FL"], ["HD", "EZ", "HT", "FL"],
 )
 
 

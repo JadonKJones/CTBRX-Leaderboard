@@ -358,6 +358,37 @@ html[data-theme="osu"] .mapc__pp {
 }
 html[data-theme="osu"] .mapc__pp b { color: var(--muted); font-weight: 600; }
 
+html[data-theme="osu"] .badge-mod {
+  border-radius: 12px;
+  border: 0;
+  box-shadow: none;
+  font-weight: 700;
+  padding: 2px 6px;
+  background: var(--box-hi);
+  color: var(--muted);
+}
+html[data-theme="osu"] .badge-rank-1 {
+  background: rgba(255, 215, 0, 0.15);
+  color: #ffd700;
+  border: 1px solid #ffd700;
+}
+html[data-theme="osu"] .badge-rank-2 {
+  background: rgba(192, 192, 192, 0.15);
+  color: #c0c0c0;
+  border: 1px solid #c0c0c0;
+}
+html[data-theme="osu"] .badge-rank-3 {
+  background: rgba(205, 127, 50, 0.15);
+  color: #cd7f32;
+  border: 1px solid #cd7f32;
+}
+html[data-theme="osu"] .badge-persistent {
+  background: linear-gradient(135deg, rgba(255, 105, 180, 0.15), rgba(138, 43, 226, 0.15));
+  color: #ff69b4;
+  border: 1px solid #ff69b4;
+  box-shadow: 0 0 5px rgba(255, 105, 180, 0.2);
+}
+
 @media (max-width: 620px) {
   .mapc__cover { display: none; }
 }

@@ -12,8 +12,32 @@
         <div class="profile-info__name">
           {{ m.flag(user.country_code) }}
           <a href="https://osu.ppy.sh/users/{{ user.id }}/fruits">{{ user.username }}</a>
-          {% if user.discord_link %}
-            <span class="profile-info__badges" style="margin-left: 10px;">
+          {% if user.id in mod_champs or user.id in acc_champs or user.id in score_champs or user.id in first_place_champs or user.badges.count() > 0 %}
+            <span class="profile-info__badges">
+            {% if user.id in first_place_champs %}
+              {% set fp_info = first_place_champs[user.id] %}
+              {% if fp_info.rank <= 3 %}
+                <span class="badge badge-mod badge-rank-{{ fp_info.rank }}" title="Global #{{ fp_info.rank }} in First Places">First Place Champion</span>
+              {% endif %}
+            {% endif %}
+            {% if user.id in acc_champs %}
+              <span class="badge badge-mod badge-rank-{{ acc_champs[user.id] }}" title="Global #{{ acc_champs[user.id] }} in Accuracy">Accuracy Champion</span>
+            {% endif %}
+            {% if user.id in score_champs %}
+              <span class="badge badge-mod badge-rank-{{ score_champs[user.id] }}" title="Global #{{ score_champs[user.id] }} in Total Score">Score Champion</span>
+            {% endif %}
+            {% for m, r in mod_champs.get(user.id, []) %}
+              <span class="badge badge-mod badge-rank-{{ r }}" title="Global #{{ r }} for {{ m }}">{{ m }} Champion</span>
+            {% endfor %}
+            {% for b in user.badges %}
+              <span class="badge badge-mod badge-persistent" title="Awarded {{ b.awarded_at.strftime('%b %d, %Y') }}">{{ b.badge_name }}</span>
+            {% endfor %}
+            {% if user.discord_link %}
+              <span class="badge badge-mod" style="background: #5865F2; border-color: #5865F2; color: #fff;" title="Discord Linked">Discord</span>
+            {% endif %}
+            </span>
+          {% elif user.discord_link %}
+            <span class="profile-info__badges">
               <span class="badge badge-mod" style="background: #5865F2; border-color: #5865F2; color: #fff;" title="Discord Linked">Discord</span>
             </span>
           {% endif %}
@@ -43,29 +67,6 @@
     </div>
 
     <div class="profile-grades">{{ m.grades(profile.grades) }}</div>
-
-    {% if user.id in mod_champs or user.id in acc_champs or user.id in score_champs or user.id in first_place_champs or user.badges.count() > 0 %}
-    <div class="profile-badges">
-      {% if user.id in first_place_champs %}
-        {% set fp_info = first_place_champs[user.id] %}
-        {% if fp_info.rank <= 3 %}
-          <div class="badge badge-mod badge-rank-{{ fp_info.rank }}" title="Global #{{ fp_info.rank }} in First Places">First Place Champion</div>
-        {% endif %}
-      {% endif %}
-      {% if user.id in acc_champs %}
-        <div class="badge badge-mod badge-rank-{{ acc_champs[user.id] }}" title="Global #{{ acc_champs[user.id] }} in Accuracy">Accuracy Champion</div>
-      {% endif %}
-      {% if user.id in score_champs %}
-        <div class="badge badge-mod badge-rank-{{ score_champs[user.id] }}" title="Global #{{ score_champs[user.id] }} in Total Score">Score Champion</div>
-      {% endif %}
-      {% for m, r in mod_champs.get(user.id, []) %}
-        <div class="badge badge-mod badge-rank-{{ r }}" title="Global #{{ r }} for {{ m }}">{{ m }} Champion</div>
-      {% endfor %}
-      {% for b in user.badges %}
-        <div class="badge badge-mod badge-persistent" title="Awarded {{ b.awarded_at.strftime('%b %d, %Y') }}">{{ b.badge_name }}</div>
-      {% endfor %}
-    </div>
-    {% endif %}
   </div>
 
   {% if profile.timelines.playcount %}

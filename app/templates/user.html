@@ -12,8 +12,14 @@
         <div class="profile-info__name">
           {{ m.flag(user.country_code) }}
           <a href="https://osu.ppy.sh/users/{{ user.id }}/fruits">{{ user.username }}</a>
-          {% if user.id in mod_champs or user.id in acc_champs or user.id in score_champs %}
+          {% if user.id in mod_champs or user.id in acc_champs or user.id in score_champs or user.id in first_place_champs %}
             <span class="profile-info__badges">
+            {% if user.id in first_place_champs %}
+              {% set fp_info = first_place_champs[user.id] %}
+              <span class="badge badge-mod badge-rank-{{ fp_info.rank if fp_info.rank <= 3 else 'none' }}" title="Global #{{ fp_info.rank }} in First Places">
+                {% if fp_info.rank <= 3 %}First Place Champion{% else %}🏆 {{ fp_info.count }} First Places{% endif %}
+              </span>
+            {% endif %}
             {% if user.id in acc_champs %}
               <span class="badge badge-mod badge-rank-{{ acc_champs[user.id] }}" title="Global #{{ acc_champs[user.id] }} in Accuracy">Accuracy Champion</span>
             {% endif %}

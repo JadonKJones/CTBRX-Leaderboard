@@ -59,11 +59,12 @@ def _num(value):
 
 @bp.app_context_processor
 def inject_champs():
-    from .leaderboards import get_mod_champions, get_acc_champions, get_score_champions
+    from .leaderboards import get_mod_champions, get_acc_champions, get_score_champions, get_first_place_counts
     return {
         "mod_champs": get_mod_champions(),
         "acc_champs": get_acc_champions(),
         "score_champs": get_score_champions(),
+        "first_place_champs": {r["user"].id: {"count": r["first_places"], "rank": r["rank"]} for r in get_first_place_counts() if r["user"]},
     }
 # --------------------------------------------------------------------------- #
 #  helpers
@@ -196,6 +197,27 @@ def leaderboard():
         page_size=PAGE,
     )
 
+
+@bp.route("/leaderboard/first-places")
+def first_places_leaderboard():
+    from .leaderboards import get_first_place_counts
+    rows = get_first_place_counts()
+    
+    podium = [
+        {
+            "rank": r["rank"],
+            "name": r["user"].username if r["user"] else "?",
+            "href": url_for("web.user_detail", key=r["user"].id) if r["user"] else "#",
+            "avatar": f"https://a.ppy.sh/{r['user'].id}" if r["user"] else "",
+            "flag_cc": r["user"].country_code if r["user"] else None,
+            "value": f"{r['first_places']} #1s",
+        }
+        for r in rows[:3] if r["user"]
+    ]
+    
+    return render_template(
+        "first_places.html", rows=rows, podium=podium
+    )
 
 @bp.route("/topscores")
 def topscores():

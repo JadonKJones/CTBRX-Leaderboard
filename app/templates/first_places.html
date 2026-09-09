@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block winpath %}FIRST PLACES{% endblock %}
+{% block content %}
+  {{ m.page_header('First Places', "Players with the most #1 scores on beatmaps.") }}
+
+  {{ m.podium(podium) }}
+
+  <table class="info ranking">
+    <thead><tr><th class="rank">#</th><th>Player</th><th class="pp">#1s</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td class="rank">#{{ r.rank }}</td>
+        <td>
+          {{ m.flag(r.user.country_code) if r.user else '' }}
+          {% if r.user %}
+            <a href="{{ url_for('web.user_detail', key=r.user.id) }}">{{ r.user.username }}</a>
+          {% else %}
+            Unknown
+          {% endif %}
+        </td>
+        <td class="pp">{{ r.first_places }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3" class="muted">No first places yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

@@ -164,6 +164,61 @@ def get_acc_champions() -> dict[int, int]:
     _acc_champs_time = time.time()
     return champs
 
+_first_places_cache = None
+_first_places_time = 0
+
+def get_first_place_counts() -> list[dict]:
+    global _first_places_cache, _first_places_time
+    if _first_places_cache is not None and time.time() - _first_places_time < 300:
+        return _first_places_cache
+
+    from sqlalchemy import text
+    
+    # Using SQLite's bare column extension for MAX()
+    query = text("""
+        SELECT user_id, COUNT(*) as first_places 
+        FROM (
+            SELECT scores.beatmap_id, scores.user_id, MAX(scores.pp) 
+            FROM scores
+            JOIN beatmaps ON scores.beatmap_id = beatmaps.id
+            WHERE scores.hidden = 0 
+              AND scores.pp IS NOT NULL 
+              AND beatmaps.status IN ('ranked', 'approved')
+            GROUP BY scores.beatmap_id
+        ) 
+        GROUP BY user_id
+        ORDER BY first_places DESC
+    """)
+    
+    results = db.session.execute(query).fetchall()
+    
+    # fetch users
+    user_ids = [r[0] for r in results]
+    users = {u.id: u for u in db.session.query(User).filter(User.id.in_(user_ids)).all()}
+    
+    rows = []
+    current_rank = 1
+    last_count = None
+    
+    for i, row in enumerate(results):
+        uid = row[0]
+        count = row[1]
+        
+        if last_count is None or count < last_count:
+            current_rank = i + 1
+            last_count = count
+            
+        if users.get(uid):
+            rows.append({
+                "user": users.get(uid),
+                "first_places": count,
+                "rank": current_rank
+            })
+        
+    _first_places_cache = rows
+    _first_places_time = time.time()
+    return rows
+
 _score_champs_cache = None
 _score_champs_time = 0
 

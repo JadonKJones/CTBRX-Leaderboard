@@ -141,3 +141,12 @@ class OsuApiClient:
         with open(path, "wb") as fh:
             fh.write(resp.content)
         return True
+
+    def download_replay(self, score_id: int) -> bytes | None:
+        self._ensure_token()
+        self._throttle()
+        resp = self._session.get(f"{API}/scores/{score_id}/download", timeout=30)
+        if not resp.ok or not resp.content:
+            log.warning("Failed to download replay %d: %s %s", score_id, resp.status_code, resp.text[:100])
+            return None
+        return resp.content

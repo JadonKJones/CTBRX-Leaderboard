@@ -291,12 +291,33 @@ def firehose_tick(app, api) -> int:
                                 },
                                 "url": f"https://osu.ppy.sh/beatmaps/{beatmap.id}"
                             }
-                            requests.post(
-                                f"https://discord.com/api/v10/channels/{channel_id}/messages",
-                                headers={"Authorization": f"Bot {bot_token}"},
-                                json={"content": content, "embeds": [embed]},
-                                timeout=5
-                            )
+                            import json
+                            payload = {"content": content, "embeds": [embed]}
+                            files = {}
+                            
+                            if is_global_1:
+                                try:
+                                    replay_data = api.download_replay(best.id)
+                                    if replay_data:
+                                        files["files[0]"] = (f"{best.id}.osr", replay_data, "application/octet-stream")
+                                except Exception as e:
+                                    log.warning("Failed to fetch replay for discord: %s", e)
+
+                            if files:
+                                files["payload_json"] = (None, json.dumps(payload))
+                                requests.post(
+                                    f"https://discord.com/api/v10/channels/{channel_id}/messages",
+                                    headers={"Authorization": f"Bot {bot_token}"},
+                                    files=files,
+                                    timeout=15
+                                )
+                            else:
+                                requests.post(
+                                    f"https://discord.com/api/v10/channels/{channel_id}/messages",
+                                    headers={"Authorization": f"Bot {bot_token}"},
+                                    json=payload,
+                                    timeout=5
+                                )
                         except Exception as e:
                             log.error("Failed to send Discord message: %s", e)
 

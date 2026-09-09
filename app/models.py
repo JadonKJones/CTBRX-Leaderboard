@@ -128,3 +128,13 @@ class DiscordLink(db.Model):
     osu_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
     user = db.relationship("User", backref=db.backref("discord_link", uselist=False))
+
+class UserBadge(db.Model):
+    __tablename__ = "user_badges"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    badge_name = db.Column(db.String(128), nullable=False)
+    awarded_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+    user = db.relationship("User", backref=db.backref("badges", lazy="dynamic"))

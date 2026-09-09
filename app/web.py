@@ -164,10 +164,13 @@ def index():
             "scores": make_cumulative_series(scores_counts, scores_base),
             "players": make_cumulative_series(users_counts, users_base),
             "beatmaps": make_cumulative_series(maps_counts, maps_base),
-            "scores_today": scores_today_series
+        "scores_today": scores_today_series
         },
         "days": days
     }
+    
+    from .leaderboards import best_improved
+    
     return render_template(
         "index.html",
         stats=stats,
@@ -175,6 +178,7 @@ def index():
         high_pp=recent_high_pp(),
         recent=recent_scores(),
         trending=trending_beatmaps(),
+        best_improved=best_improved()
     )
 
 

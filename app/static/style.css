@@ -372,3 +372,21 @@ footer.page-footer {
   color: #cd7f32;
   border: 1px solid #cd7f32;
 }
+
+.profile-badges {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 4px;
+}
+
+.badge-persistent {
+  background: linear-gradient(135deg, rgba(255, 105, 180, 0.15), rgba(138, 43, 226, 0.15));
+  color: #ff69b4;
+  border: 1px solid #ff69b4;
+  box-shadow: 0 0 5px rgba(255, 105, 180, 0.2);
+}

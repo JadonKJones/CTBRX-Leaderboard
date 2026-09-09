@@ -520,6 +520,35 @@ def build_api(app) -> OsuApiClient:
     )
 
 
+def award_best_improved(app) -> None:
+    from .leaderboards import best_improved
+    from .models import UserBadge
+    
+    with app.app_context():
+        # Get the top 1 most improved player
+        winners = best_improved(days=7, limit=1)
+        if not winners:
+            log.info("No winners for weekly best improved")
+            return
+            
+        winner = winners[0]
+        uid = winner["user"].id
+        
+        # Calculate week number of the year for the badge name
+        week_num = date.today().isocalendar()[1]
+        badge_name = f"Best Improved - Week {week_num}"
+        
+        # Avoid duplicate awards if run manually multiple times
+        existing = db.session.query(UserBadge).filter_by(user_id=uid, badge_name=badge_name).first()
+        if not existing:
+            badge = UserBadge(user_id=uid, badge_name=badge_name)
+            db.session.add(badge)
+            db.session.commit()
+            log.info("Awarded %s to user %s (Delta: %s)", badge_name, uid, winner["delta"])
+        else:
+            log.info("User %s already has %s", uid, badge_name)
+
+
 def start_scheduler(app) -> BackgroundScheduler:
     api = build_api(app)
     sched = BackgroundScheduler(daemon=True, timezone="UTC")
@@ -540,6 +569,11 @@ def start_scheduler(app) -> BackgroundScheduler:
                   max_instances=1, coalesce=True)
     sched.add_job(_job(cleanup, app), "interval",
                   seconds=app.config["CLEANUP_INTERVAL"], id="cleanup",
+                  max_instances=1, coalesce=True)
+    
+    # Run the weekly best improved award every Sunday at 00:00 UTC
+    sched.add_job(_job(award_best_improved, app), "cron",
+                  day_of_week="sun", hour=0, minute=0, id="weekly_improver",
                   max_instances=1, coalesce=True)
 
     sched.start()

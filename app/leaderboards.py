@@ -536,3 +536,46 @@ def player_timelines(user_id: int) -> dict:
         "rank": rank_series,
         "peak_rank": ({"rank": peak.rank, "date": peak.date.isoformat()} if peak else None),
     }
+
+
+def best_improved(days: int = 7, limit: int = 10) -> list[dict]:
+    """Players who gained the most PP over the last `days` days."""
+    from datetime import timedelta
+    from sqlalchemy import func
+
+    target_date = (datetime.now(timezone.utc) - timedelta(days=days)).date()
+
+    # Subquery to find the latest snapshot date for each user on or before target_date
+    subq = (
+        db.session.query(
+            RankSnapshot.user_id,
+            func.max(RankSnapshot.date).label("max_date")
+        )
+        .filter(RankSnapshot.date <= target_date)
+        .group_by(RankSnapshot.user_id)
+        .subquery()
+    )
+
+    # Subquery to get the actual snapshot data (old PP)
+    snapshots = (
+        db.session.query(RankSnapshot)
+        .join(subq, (RankSnapshot.user_id == subq.c.user_id) & (RankSnapshot.date == subq.c.max_date))
+        .subquery()
+    )
+
+    # Join with current user total_pp
+    results = (
+        db.session.query(User, snapshots.c.pp.label("old_pp"))
+        .join(snapshots, User.id == snapshots.c.user_id)
+        .filter(User.total_pp.isnot(None))
+        .all()
+    )
+
+    improved = []
+    for u, old_pp in results:
+        delta = (u.total_pp or 0) - old_pp
+        if delta > 0:
+            improved.append({"user": u, "delta": delta, "old_pp": old_pp})
+            
+    improved.sort(key=lambda x: x["delta"], reverse=True)
+    return improved[:limit]

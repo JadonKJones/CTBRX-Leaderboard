@@ -99,7 +99,22 @@
             <td class="pp">{{ t.count }}</td>
           </tr>
           {% else %}
-          <tr><td colspan="2" class="muted">No plays in the last 7 days yet.</td></tr>
+          <tr><td colspan="2" class="muted">No plays recently.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <h2>Best Improved (7 days)</h2>
+      <table class="info ranking">
+        <thead><tr><th>Player</th><th class="pp">Delta</th></tr></thead>
+        <tbody>
+          {% for b in best_improved %}
+          <tr>
+            <td>{{ m.flag(b.user.country_code) }} <a href="{{ url_for('web.user_detail', key=b.user.id) }}">{{ b.user.username }}</a></td>
+            <td class="pp">+{{ b.delta|round(0)|int }}pp</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="2" class="muted">No improvements this week.</td></tr>
           {% endfor %}
         </tbody>
       </table>

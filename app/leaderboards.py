@@ -544,14 +544,16 @@ def best_improved(days: int = 7, limit: int = 10) -> list[dict]:
     from sqlalchemy import func
 
     target_date = (datetime.now(timezone.utc) - timedelta(days=days)).date()
+    today_date = datetime.now(timezone.utc).date()
 
-    # Subquery to find the latest snapshot date for each user on or before target_date
+    # Subquery to find the earliest snapshot date for each user on or after target_date
     subq = (
         db.session.query(
             RankSnapshot.user_id,
-            func.max(RankSnapshot.date).label("max_date")
+            func.min(RankSnapshot.date).label("ref_date")
         )
-        .filter(RankSnapshot.date <= target_date)
+        .filter(RankSnapshot.date >= target_date)
+        .filter(RankSnapshot.date < today_date)
         .group_by(RankSnapshot.user_id)
         .subquery()
     )
@@ -559,7 +561,7 @@ def best_improved(days: int = 7, limit: int = 10) -> list[dict]:
     # Subquery to get the actual snapshot data (old PP)
     snapshots = (
         db.session.query(RankSnapshot)
-        .join(subq, (RankSnapshot.user_id == subq.c.user_id) & (RankSnapshot.date == subq.c.max_date))
+        .join(subq, (RankSnapshot.user_id == subq.c.user_id) & (RankSnapshot.date == subq.c.ref_date))
         .subquery()
     )
 

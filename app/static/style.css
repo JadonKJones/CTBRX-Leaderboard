@@ -359,6 +359,9 @@ footer.page-footer {
   color: #000;
   text-transform: uppercase;
 }
+.badge-rank-1 { background: #ffd700; }
+.badge-rank-2 { background: #e0e0e0; }
+.badge-rank-3 { background: #cd7f32; color: #fff; }
 .badge-persistent {
   background: #ffb6c1;
 }
